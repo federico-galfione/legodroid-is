@@ -4,4 +4,14 @@
     <string name="title_level2">Level 2</string>
     <string name="title_level3">Level 3</string>
     <string name="title_test">Test</string>
+    <string name="motors_speed">Velocità motori</string>
+    <string name="grab_speed">Velocità braccio meccanico</string>
+    <string name="movement">Movimento</string>
+    <string name="move_up">Avanti</string>
+    <string name="move_left">Sinistra</string>
+    <string name="move_right">Destra</string>
+    <string name="move_down">Indietro</string>
+    <string name="grab">Braccio meccanico</string>
+    <string name="pickup">Afferra</string>
+    <string name="drop">Molla</string>
 </resources>

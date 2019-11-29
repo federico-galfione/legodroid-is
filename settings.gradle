@@ -1,2 +1,2 @@
-include ':app'
+include ':app', ':legodroid'
 rootProject.name='Software Engineering App'
