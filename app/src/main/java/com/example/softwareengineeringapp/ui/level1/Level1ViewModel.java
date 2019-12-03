@@ -4,6 +4,8 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.softwareengineeringapp.MainActivity;
+
 public class Level1ViewModel extends ViewModel {
 
     private MutableLiveData<String> mText;
@@ -11,6 +13,7 @@ public class Level1ViewModel extends ViewModel {
     public Level1ViewModel() {
         mText = new MutableLiveData<>();
         mText.setValue("This is level 1 fragment");
+
     }
 
     public LiveData<String> getText() {
