@@ -26,6 +26,8 @@ public class MainActivity extends AppCompatActivity {
     public static TachoMotor motorRight;
     public static TachoMotor motorGrab;
 
+    public static MainActivity mainActivity;
+
 
     private static final String TAG = Prelude.ReTAG("MainActivity");
 
@@ -33,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        mainActivity = this;
         try {
             BluetoothConnection.BluetoothChannel conn = new BluetoothConnection("EV3IS").connect(); // replace with your own brick name
 

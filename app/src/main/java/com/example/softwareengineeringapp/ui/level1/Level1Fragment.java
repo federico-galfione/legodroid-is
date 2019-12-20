@@ -24,12 +24,7 @@ public class Level1Fragment extends Fragment {
                 ViewModelProviders.of(this).get(Level1ViewModel.class);
         View root = inflater.inflate(R.layout.fragment_level1, container, false);
         final TextView textView = root.findViewById(R.id.text_level1);
-        level1ViewModel.getText().observe(this, new Observer<String>() {
-            @Override
-            public void onChanged(@Nullable String s) {
-                textView.setText(s);
-            }
-        });
+        level1ViewModel.getText().observe(this, (@Nullable String s) -> textView.setText(s));
         return root;
     }
 }

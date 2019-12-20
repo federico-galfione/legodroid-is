@@ -145,4 +145,16 @@
 
 
     </TableRow>
+
+    <TextView
+        android:id="@+id/gyro_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="@string/gyro" />
+    <TextView
+        android:id="@+id/gyro"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"/>
 </TableLayout>

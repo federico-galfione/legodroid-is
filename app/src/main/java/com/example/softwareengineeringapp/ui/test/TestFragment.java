@@ -1,9 +1,13 @@
 package com.example.softwareengineeringapp.ui.test;
 
 import android.annotation.SuppressLint;
+import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -12,22 +16,14 @@ import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
 import com.example.softwareengineeringapp.MainActivity;
 import com.example.softwareengineeringapp.R;
 
-import it.unive.dais.legodroid.lib.plugs.TachoMotor;
-import it.unive.dais.legodroid.lib.util.Consumer;
-import it.unive.dais.legodroid.lib.util.Prelude;
-import it.unive.dais.legodroid.lib.util.ThrowingConsumer;
-
-public class TestFragment extends Fragment {
+public class TestFragment extends Fragment implements SensorEventListener{
 
     private TestViewModel testViewModel;
 
@@ -39,6 +35,13 @@ public class TestFragment extends Fragment {
     private Button drop;
     private SeekBar speedConfig;
     private SeekBar grabConfig;
+    private TextView gyro;
+    private SensorManager sensorManager;
+
+    private int startOrientation = 0;
+
+    private final float[] rotationMatrix = new float[9];
+    private final float[] orientationAngles = new float[3];
 
 
     @SuppressLint("ClickableViewAccessibility")
@@ -55,6 +58,7 @@ public class TestFragment extends Fragment {
         drop = root.findViewById(R.id.drop);
         speedConfig = root.findViewById(R.id.speedConfig);
         grabConfig = root.findViewById(R.id.grabConfig);
+        gyro = root.findViewById(R.id.gyro);
 
 
         forward.setOnTouchListener(new CustomHandler(() -> move(speedConfig.getProgress(),speedConfig.getProgress())));
@@ -65,11 +69,17 @@ public class TestFragment extends Fragment {
         grab.setOnTouchListener(new CustomHandler(() -> grabbing(grabConfig.getProgress())));
         drop.setOnTouchListener(new CustomHandler(() -> grabbing(-grabConfig.getProgress())));
 
+        sensorManager = (SensorManager) MainActivity.mainActivity.getSystemService(MainActivity.SENSOR_SERVICE);
+
+        Sensor rotation = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+        if(rotation != null){
+            sensorManager.registerListener(this, rotation, SensorManager.SENSOR_DELAY_GAME);
+        }
         return root;
     }
 
 
-
+    // Muove il robot
     private void move(int speedMotorLeft, int speedMotorRight){
         try {
             MainActivity.motorLeft.setTimeSpeed(speedMotorLeft, 0, 100, 0, true);
@@ -77,12 +87,30 @@ public class TestFragment extends Fragment {
         }catch(Exception e){}
     }
 
+    // Aziona il motore della chela
     private void grabbing(int speedMotor){
         try{
             MainActivity.motorGrab.setTimeSpeed(speedMotor, 0, 100, 0, true);
         }catch(Exception e){}
     }
 
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
+            SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values);
+            int degrees = (Math.round((int) (Math.toDegrees(SensorManager.getOrientation(rotationMatrix, orientationAngles)[0]) + 360 - startOrientation) % 360));
+            if(startOrientation == 0)
+                startOrientation = degrees;
+            gyro.setText(String.valueOf(degrees));
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
+
+    /*Classe per il funzionamento continuo dei motori mentre si tiene premuto un pulsante*/
     private class CustomHandler implements View.OnTouchListener{
         private Handler mHandler;
         private Runnable movement;
@@ -115,5 +143,8 @@ public class TestFragment extends Fragment {
         };
     }
 
+    public void onDestroyView (){
+        super.onDestroyView();
+    }
 
 }
