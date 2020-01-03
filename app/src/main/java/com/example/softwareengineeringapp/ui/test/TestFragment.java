@@ -1,7 +1,6 @@
 package com.example.softwareengineeringapp.ui.test;
 
 import android.annotation.SuppressLint;
-import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
