@@ -83,6 +83,8 @@ public class TestFragment extends Fragment implements SensorEventListener{
         try {
             MainActivity.motorLeft.setTimeSpeed(speedMotorLeft, 0, 100, 0, true);
             MainActivity.motorRight.setTimeSpeed(speedMotorRight, 0, 100, 0, true);
+            MainActivity.motorLeft.waitCompletion();
+            MainActivity.motorRight.waitCompletion();
         }catch(Exception e){}
     }
 
@@ -90,6 +92,7 @@ public class TestFragment extends Fragment implements SensorEventListener{
     private void grabbing(int speedMotor){
         try{
             MainActivity.motorGrab.setTimeSpeed(speedMotor, 0, 100, 0, true);
+            MainActivity.motorGrab.waitCompletion();
         }catch(Exception e){}
     }
 
@@ -97,7 +100,7 @@ public class TestFragment extends Fragment implements SensorEventListener{
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
             SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values);
-            int degrees = (Math.round((int) (Math.toDegrees(SensorManager.getOrientation(rotationMatrix, orientationAngles)[0]) + 360 - startOrientation) % 360));
+            int degrees = (Math.round((int) (Math.toDegrees(SensorManager.getOrientation(rotationMatrix, orientationAngles)[0]) + 720 - startOrientation) % 360));
             if(startOrientation == 0)
                 startOrientation = degrees;
             gyro.setText(String.valueOf(degrees));

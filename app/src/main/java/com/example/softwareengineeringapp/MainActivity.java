@@ -20,7 +20,7 @@ import it.unive.dais.legodroid.lib.util.Prelude;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static EV3 ev3;
+    public static EV3 ev3;
 
     public static TachoMotor motorLeft;
     public static TachoMotor motorRight;
@@ -67,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
         motorGrab = api.getTachoMotor(EV3.OutputPort.B);
         Prelude.trap(() -> motorGrab.setType(TachoMotor.Type.MEDIUM));
     }
+
 }
 
 
