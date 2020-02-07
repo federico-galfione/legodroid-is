@@ -39,9 +39,15 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
     private Button stopLevel1;
     private TextView gyro;
     private TextView gyroTest;
-    private Thread moveForwardThread;
+    private Thread moveLongThread;
+    private Thread moveShortThread;
     private Thread rotateLeftThread;
     private Thread rotateRightThread;
+    private Thread turnAroundThread;
+    private Thread adjustThread;
+    private Thread routineThread;
+
+    private boolean flag = false;
 
     class Sharing {
         public volatile int currentDegree = 0;
@@ -75,15 +81,22 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
         Log.i("MYLOG MAINACTIVITY", MainActivity.motorLeft+"");
 
         rotateLeftThread = new Thread(this::rotateLeft);
+        rotateRightThread = new Thread(this::rotateRight);
+        turnAroundThread = new Thread(this::turnAround);
+        moveLongThread = new Thread(this::moveLong);
+        routineThread = new Thread(this::routine);
 
+        // Instanzio il sensorManager
         sensorManager = (SensorManager) MainActivity.mainActivity.getSystemService(MainActivity.SENSOR_SERVICE);
+        // Prendo il sensore di rotazione del cellulare
         rotation = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
 
+        // Al click del pulsante avvia il primo livello
         startLevel1.setOnClickListener((view) -> {
             if(rotation != null){
                 sensorManager.registerListener(this, rotation, SensorManager.SENSOR_DELAY_FASTEST);
             }
-            rotateLeftThread.start();
+            routineThread.start();
         });
 
         // Blocca i motori
@@ -105,17 +118,30 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
         if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
             SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values);
 
+            if(!flag) {
+                int temp = (Math.round((int) (Math.toDegrees(SensorManager.getOrientation(rotationMatrix, orientationAngles)[0]) + 720 - startOrientation) % 360));
+                startOrientation = temp;
+                flag = true;
+            }
             sharedElements.currentDegree = (Math.round((int) (Math.toDegrees(SensorManager.getOrientation(rotationMatrix, orientationAngles)[0]) + 720 - startOrientation) % 360));
 
-            if(startOrientation == 0) {
-                startOrientation = sharedElements.currentDegree;
-            }
-            Log.i("MYLOG GYRO", String.valueOf(sharedElements.currentDegree));
-            if(sharedElements.rotating && sharedElements.arrivingDegree >= sharedElements.currentDegree){
+            Log.i("MYLOG GYRO", "CURRENT: " + sharedElements.currentDegree + " ARRIVING: " + sharedElements.arrivingDegree + " STARTING: " + sharedElements.startingDegree + " ROTATING: " + sharedElements.rotating);
+            if(sharedElements.rotating && sharedElements.arrivingDegree == sharedElements.currentDegree && sharedElements.arrivingDegree != sharedElements.startingDegree){
                 try {
+                    sharedElements.motorLeft.brake();
+                    sharedElements.motorRight.brake();
                     sharedElements.motorLeft.stop();
                     sharedElements.motorRight.stop();
                     sharedElements.rotating = false;
+                    adjustThread = new Thread(this::adjustOrientation);
+                    adjustThread.start();
+                    if(rotateLeftThread.getState() == Thread.State.TIMED_WAITING)
+                        rotateLeftThread.interrupt();
+                    if(rotateRightThread.getState() == Thread.State.TIMED_WAITING)
+                        rotateRightThread.interrupt();
+                    if(turnAroundThread.getState() == Thread.State.TIMED_WAITING)
+                        turnAroundThread.interrupt();
+
                 }catch(Exception e){}
             }
             gyro.setText(String.valueOf(sharedElements.currentDegree));
@@ -127,20 +153,58 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
 
     }
 
-
-    private void moveForward(){
+    private void routine(){
         try {
-            for(int i = 0; i < 10; i++) {
-                int speedMotorLeft = 100;
-                int speedMotorRight = 100;
-                /*if (((360 - currentDegree) % 360) > (degreeToFollow + currentDegree))
-                    speedMotorRight = 50;
-                if (((360 - currentDegree) % 360) < (degreeToFollow + currentDegree))
-                    speedMotorLeft = 50;*/
-                sharedElements.motorLeft.setTimeSpeed(speedMotorLeft, 0, 200, 0, false);
-                sharedElements.motorRight.setTimeSpeed(speedMotorRight, 0, 200, 0, false);
-                sharedElements.motorLeft.waitCompletion();
-                sharedElements.motorRight.waitCompletion();
+            /*moveShortThread = new Thread(this::moveShort);
+            moveShortThread.start();
+            moveShortThread.join();*/
+            rotateLeftThread = new Thread(this::rotateLeft);
+            rotateLeftThread.start();
+            rotateLeftThread.join();
+            adjustThread.join();
+            Log.i("MYLOG ROUTINE", "first!" );
+            /*moveLongThread = new Thread(this::moveLong);
+            moveLongThread.start();
+            moveLongThread.join();*/
+            turnAroundThread = new Thread(this::turnAround);
+            turnAroundThread.start();
+            turnAroundThread.join();
+            adjustThread.join();
+            Log.i("MYLOG ROUTINE", "second!" );
+            /*moveLongThread = new Thread(this::moveLong);
+            moveLongThread.start();
+            moveLongThread.join();*/
+            rotateLeftThread = new Thread(this::rotateLeft);
+            rotateLeftThread.start();
+            rotateLeftThread.join();
+            adjustThread.join();
+            Log.i("MYLOG ROUTINE", "third!" );
+
+        }catch(Exception e){}
+    }
+
+    private void moveLong(){
+        moveForward(1000, 3000, 1000);
+    }
+
+    private void moveShort(){
+        moveForward(500, 1000, 500);
+    }
+
+    private void moveForward(int step1, int step2, int step3){
+        try {
+            sharedElements.arrivingDegree = sharedElements.currentDegree;
+            for(int i = 0; i < 2; i++) {
+                int speedMotorLeft = 20;
+                int speedMotorRight = 20;
+                sharedElements.motorLeft.setTimeSpeed(speedMotorLeft, step1/2, step2/2, step3/2, true);
+                sharedElements.motorRight.setTimeSpeed(speedMotorRight, step1/2, step2/2, step3/2, true);
+                Thread.currentThread().sleep(step1 + step2 + step3);
+                adjustThread = new Thread(this::adjustOrientation);
+                adjustThread.start();
+                try{
+                    adjustThread.join();
+                }catch(Exception e){}
                 Log.i("MYLOG FORWARD", "move forward 2 seconds " + sharedElements.currentDegree);
             }
         }catch(Exception e){
@@ -149,33 +213,61 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
     }
 
     private void rotateLeft() {
+        rotate(-90, -5, 5);
+    }
+
+    private void turnAround(){
+        rotate(180, -5, 5);
+    }
+
+    private void rotateRight(){
+        rotate(90, 5, -5);
+    }
+
+    private void rotate(int rotationDegree, int speedLeft, int speedRight){
         try {
             Log.i("MYLOG SHARED", sharedElements.currentDegree + " " + sharedElements.motorLeft);
-            sharedElements.motorLeft.setTimeSpeed(-30, 0, 10000, 0, false);
-            sharedElements.motorRight.setTimeSpeed(30, 0, 10000, 0, false);
+            sharedElements.arrivingDegree = ((sharedElements.currentDegree + rotationDegree) + 360) % 360;
+            sharedElements.motorLeft.setTimeSpeed(speedLeft, 0, 10000, 0, true);
+            sharedElements.motorRight.setTimeSpeed(speedRight, 0, 10000, 0, true);
             sharedElements.rotating = true;
-            sharedElements.arrivingDegree = ((sharedElements.currentDegree - 90) + 360) % 360;
+            Thread.currentThread().sleep(10000);
             Log.i("MYLOG LEFT", "move left: " + sharedElements.currentDegree + " " + sharedElements.startingDegree);
         }catch (Exception e) {
             Log.e("MYLOG ERROR LEFT", e.toString());
         }
-        // sharedElements.startingDegree = sharedElements.currentDegree;
     }
 
-    private void rotateRight() {
-        do {
-            try {
-                sharedElements.motorLeft.setTimeSpeed(10, 0, 100, 0, false);
-                sharedElements.motorRight.setTimeSpeed(-10, 0, 100, 0, false);
-                sharedElements.motorLeft.waitCompletion();
-                sharedElements.motorRight.waitCompletion();
-                Log.i("MYLOG RIGHT", "move right: " + sharedElements.currentDegree);
-                Log.i("MYLOG RIGHT", "move right: " + sharedElements.currentDegree);
-            } catch (Exception e) {
-                Log.e("MYLOG ERROR RIGHT", e.toString());
+    private void adjustOrientation() {
+        try {
+            Thread.currentThread().sleep(200);
+            Log.i("ADJUST!", sharedElements.currentDegree + " " + sharedElements.arrivingDegree);
+            while (sharedElements.currentDegree != sharedElements.arrivingDegree) {
+                if (sharedElements.arrivingDegree == 0) {
+                    if (360 - sharedElements.currentDegree > 1 && 360 - sharedElements.currentDegree <= 20) {
+                        sharedElements.motorLeft.setStepSpeed(5, 0, 2, 0, true);
+                        sharedElements.motorRight.setStepSpeed(-5, 0, 2, 0, true);
+                    } else {
+                        sharedElements.motorLeft.setStepSpeed(-5, 0, 2, 0, true);
+                        sharedElements.motorRight.setStepSpeed(5, 0, 2, 0, true);
+                    }
+                    Thread.currentThread().sleep(200);
+                }else{
+                    if (sharedElements.currentDegree < sharedElements.arrivingDegree) {
+                        sharedElements.motorLeft.setStepSpeed(5, 0, 2, 0, true);
+                        sharedElements.motorRight.setStepSpeed(-5, 0, 2, 0, true);
+                    } else {
+                        sharedElements.motorLeft.setStepSpeed(-5, 0, 2, 0, true);
+                        sharedElements.motorRight.setStepSpeed(5, 0, 2, 0, true);
+                    }
+                    Thread.currentThread().sleep(100);
+                }
+                Log.i("ADJUST WHILE!", sharedElements.currentDegree + " " + sharedElements.arrivingDegree);
             }
-        } while(sharedElements.currentDegree%90 != 0);
-
+            sharedElements.startingDegree = sharedElements.currentDegree;
+            sharedElements.motorRight.stop();
+            sharedElements.motorLeft.stop();
+        }catch(Exception e){}
     }
 
 }
