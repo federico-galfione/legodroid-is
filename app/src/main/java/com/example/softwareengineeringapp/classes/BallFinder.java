@@ -226,26 +226,18 @@ public class BallFinder {
     //Se così fosse, tengo il maggiore tra i due ed elimino l'altro.
     private boolean checkBalls(ArrayList<Ball> list, Ball ball){
 
-            Iterator<Ball> iter = list.iterator();
-            Ball b;
-            boolean add = true;
-        try {
-            while (iter.hasNext()) {
-                b = iter.next();
-                if (Math.pow(ball.center.x - b.center.x, 2) + Math.pow(ball.center.y - b.center.y, 2) <= Math.pow(b.radius, 2)) {
-                    if (ball.radius > b.radius) {
-                        iter.remove();
-                    } else {
-                        add = false;
-                    }
+        Iterator<Ball> iter = list.iterator();
+        Ball b;
+        boolean add = true;
+        while (iter.hasNext()) {
+            b = iter.next();
+            if (Math.pow(ball.center.x - b.center.x, 2) + Math.pow(ball.center.y - b.center.y, 2) <= Math.pow(b.radius, 2)) {
+                if (ball.radius > b.radius) {
+                    iter.remove();
+                } else {
+                    add = false;
                 }
             }
-            if (add) {
-                //list.add(ball);
-            }
-
-        }catch (Exception e){
-            Log.e("EXCEPTION ITER", e.toString());
         }
         return add;
     }
