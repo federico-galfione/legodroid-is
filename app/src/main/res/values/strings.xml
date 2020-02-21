@@ -15,4 +15,5 @@
     <string name="pickup">Afferra</string>
     <string name="drop">Molla</string>
     <string name="gyro">Giroscopio</string>
+    <string name="prc">Percentuale</string>
 </resources>

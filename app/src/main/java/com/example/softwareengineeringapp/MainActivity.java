@@ -2,6 +2,7 @@ package com.example.softwareengineeringapp;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.WindowManager;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -10,6 +11,8 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
+
+import org.opencv.android.OpenCVLoader;
 
 import java.io.IOException;
 
@@ -59,6 +62,20 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
+
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Imposta lo schermo a sempre acceso
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        // Carica le librerie di OpenCV in maniera sincrona
+        if (!OpenCVLoader.initDebug()) {
+            Log.e(TAG, "Unable to load OpenCV");
+        } else {
+            Log.d(TAG, "OpenCV loaded");
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
     }
 
     public void initializeMotors(EV3.Api api){
