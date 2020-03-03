@@ -25,8 +25,12 @@ public class BallFinder {
 
     private int sat_lower = 96;
     private int sat_upper = 255;
+
     private int red_lower = 160;
     private int red_upper = 180;
+    private int red_lower2 = 0;
+    private int red_upper2 = 10;
+
     private int blue_lower = 105;
     private int blue_upper = 130;
     /*
@@ -116,20 +120,26 @@ public class BallFinder {
 
         Mat hue = split_hsv.get(0);
         Mat mask_red = new Mat();
+        Mat mask_red2 = new Mat();
         Mat mask_blue = new Mat();
         Mat mask_yellow = new Mat();
 
         //Checks if array elements lie between the elements of two other arrays.
         Core.inRange(hsv, new Scalar(red_lower, 0, 0), new Scalar(red_upper, 255, 255), mask_red);
+        Core.inRange(hsv, new Scalar(red_lower2, 0, 0), new Scalar(red_upper2, 255, 255), mask_red2);
         Core.inRange(hsv, new Scalar(blue_lower, 0, 0), new Scalar(blue_upper, 255, 255), mask_blue);
         Core.inRange(hsv, new Scalar(yellow_lower, 0, 0), new Scalar(yellow_upper, 255, 255), mask_yellow);
 
         Mat mask_hue = new Mat();
         Mat mask = new Mat();
 
-        Core.bitwise_or(mask_red, mask_blue, mask_hue);
+        Core.bitwise_or(mask_red, mask_red2, mask_hue);
+        Core.bitwise_or(mask_hue, mask_blue, mask_hue);
         Core.bitwise_or(mask_hue, mask_yellow, mask_hue);
         Core.bitwise_and(mask_sat, mask_hue, mask);
+        /*Core.bitwise_or(mask_red, mask_blue, mask_hue);
+        Core.bitwise_or(mask_hue, mask_yellow, mask_hue);
+        Core.bitwise_and(mask_sat, mask_hue, mask);*/
 
 
         List<MatOfPoint> contours = new ArrayList<>();
@@ -219,6 +229,8 @@ public class BallFinder {
         Log.e("TEST_CENTER", testString);
 
         Log.e("BALLS", Arrays.toString(balls.stream().map(x -> x.center).toArray()));
+
+
         return balls;
     }
 
@@ -255,7 +267,7 @@ public class BallFinder {
             double percentage = (area_test * 100) / (Tot.height * Tot.width);
             check.release();
             Log.e("check1", "mat destroy");
-            if (percentage > 45) {// percentuale effettiva 79
+            if (percentage > 55) {// percentuale effettiva 79
                 return true;
             } else {
                 return false;

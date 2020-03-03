@@ -37,6 +37,10 @@ public class TestFragment extends Fragment implements SensorEventListener{
     private TextView gyro;
     private SensorManager sensorManager;
 
+    //CASA
+    private Button connect;
+    //
+
     private int startOrientation = 0;
 
     private final float[] rotationMatrix = new float[9];
@@ -58,6 +62,16 @@ public class TestFragment extends Fragment implements SensorEventListener{
         speedConfig = root.findViewById(R.id.speedConfig);
         grabConfig = root.findViewById(R.id.grabConfig);
         gyro = root.findViewById(R.id.gyro);
+
+        // CASA
+        connect=root.findViewById(R.id.connect);
+        connect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
+        //
 
 
         forward.setOnTouchListener(new CustomHandler(() -> move(speedConfig.getProgress(),speedConfig.getProgress())));

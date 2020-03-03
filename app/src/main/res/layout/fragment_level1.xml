@@ -51,15 +51,6 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <org.opencv.android.JavaCameraView
-            android:id="@+id/HelloOpenCvView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:visibility="visible"
-            app:camera_id="back"
-            app:show_fps="true" />
-
         <TextView
             android:id="@+id/textView"
             android:layout_width="match_parent"
@@ -69,6 +60,15 @@
             android:text="@string/prc"
             android:visibility="visible"
             tools:visibility="visible" />
+
+        <org.opencv.android.JavaCameraView
+            android:id="@+id/HelloOpenCvView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:visibility="gone"
+            app:camera_id="any"
+            app:show_fps="true" />
 
 
     </LinearLayout>

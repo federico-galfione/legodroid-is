@@ -18,6 +18,7 @@ import java.io.IOException;
 
 import it.unive.dais.legodroid.lib.EV3;
 import it.unive.dais.legodroid.lib.comm.BluetoothConnection;
+import it.unive.dais.legodroid.lib.plugs.GyroSensor;
 import it.unive.dais.legodroid.lib.plugs.TachoMotor;
 import it.unive.dais.legodroid.lib.util.Prelude;
 
@@ -29,6 +30,10 @@ public class MainActivity extends AppCompatActivity {
     public static TachoMotor motorRight;
     public static TachoMotor motorGrab;
 
+    // CASA
+    public static GyroSensor giroscopio;
+    //
+
     public static MainActivity mainActivity;
 
 
@@ -39,19 +44,22 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mainActivity = this;
-        try {
-            BluetoothConnection.BluetoothChannel conn = new BluetoothConnection("EV3IS").connect(); // replace with your own brick name
+        //do{
+            Log.i("CONNESSIONE_EV3_DEBUG", "Tentativo di connessione ad EV3");
+            try {
+                BluetoothConnection.BluetoothChannel conn = new BluetoothConnection("EV3IS").connect(); // replace with your own brick name
 
-            // connect to EV3 via bluetooth
-            ev3 = new EV3(conn);
+                // connect to EV3 via bluetooth
+                ev3 = new EV3(conn);
 
-            Prelude.trap(() -> ev3.run(this::initializeMotors));
+                Prelude.trap(() -> ev3.run(this::initializeMotors));
 
 
-        } catch (IOException e) {
-            Log.e(TAG, "fatal error: cannot connect to EV3");
-            e.printStackTrace();
-        }
+            } catch (IOException e) {
+                Log.e("CONNESSIONE_EV3_DEBUG", "fatal error: cannot connect to EV3");
+                e.printStackTrace();
+            }
+        //}while(motorGrab==null || motorLeft==null || motorRight==null || giroscopio==null);
 
         BottomNavigationView navView = findViewById(R.id.nav_view);
         // Passing each menu ID as a set of Ids because each
@@ -82,6 +90,16 @@ public class MainActivity extends AppCompatActivity {
         motorRight = api.getTachoMotor(EV3.OutputPort.D);
         motorLeft = api.getTachoMotor(EV3.OutputPort.A);
         motorGrab = api.getTachoMotor(EV3.OutputPort.B);
+
+        // CASA
+        giroscopio = api.getGyroSensor(EV3.InputPort._2);
+        try {
+            Log.i("GIROSCOPIO_DEBUG","Starting degree: "+giroscopio.getAngle().get());
+        }catch (Exception e){
+            Log.i("GIROSCOPIO_DEBUG",e.toString());
+        }
+        //
+
         Prelude.trap(() -> motorGrab.setType(TachoMotor.Type.MEDIUM));
     }
 

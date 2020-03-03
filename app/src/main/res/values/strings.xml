@@ -16,4 +16,5 @@
     <string name="drop">Molla</string>
     <string name="gyro">Giroscopio</string>
     <string name="prc">Percentuale</string>
+    <string name="connect">connect</string>
 </resources>
