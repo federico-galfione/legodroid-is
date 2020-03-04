@@ -17,4 +17,12 @@
     <string name="gyro">Giroscopio</string>
     <string name="prc">Percentuale</string>
     <string name="connect">connect</string>
+    <string name="numRow">Numero di Righe</string>
+    <string name="numCol">Numero di Colonne</string>
+    <string name="stop">Stop!</string>
+    <string name="start">Avvia</string>
+    <string name="start_level_label">Avvia Livello</string>
+    <string name="label_level2">Inserisci il numero di righe e colonne del campo</string>
+    <string name="create_grid">Crea griglia</string>
+
 </resources>
