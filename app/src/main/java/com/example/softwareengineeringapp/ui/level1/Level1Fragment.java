@@ -129,7 +129,10 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
         sharedElements.setMotors(MainActivity.motorLeft, MainActivity.motorRight, MainActivity.motorGrab, MainActivity.giroscopio);
         Log.i("MYLOG MAINACTIVITY", MainActivity.motorLeft+"");
 
+
+        //CREAZIONE CAMPO
         posizione = new Position(6,6);
+
 
         movementTestThread = new Thread(this::movementTest);
 
@@ -192,12 +195,18 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
                 Log.i("GIROSCOPIO_DEBUG",gradi()+"");
             }
         }, 1000, 1000);*/
+        print_p();
 
+        Log.i("POSIZIONE_CORRENTE_CAMPO","r:"+posizione.getNumero_righe()+" c:"+posizione.getNumero_colonne());
+        move(Position.muovi_avanti);
+        limite_campo();
+        move(Position.muovi_avanti);
+        Log.i("POSIZIONE_CORRENTE_CAMPO","r:"+posizione.getNumero_righe()+" c:"+posizione.getNumero_colonne());
+        /*move(Position.muovi_ruota_destra);
         move(Position.muovi_avanti);
         move(Position.muovi_ruota_sinistra);
         move(Position.muovi_avanti);
-        move(Position.muovi_ruota_destra);
-        move(Position.muovi_indietro);
+        move(Position.muovi_indietro);*/
 
         //grab();
         //release();
@@ -216,22 +225,36 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
         this.check_camera=b;
     }
 
+    private void print_p(){
+        Log.i("POSIZIONE_CORRENTE",posizione.getOrientazione()+" r:"+posizione.getRiga()+" c:"+posizione.getColonna());
+    }
+
     private boolean limite_campo(){
         boolean result=false;
         double prc = this.green_perc;
-        if(prc > 60){
+        for (int c=0; c<5;c++){
+            Log.i("POSIZIONE_CORRENTE_VERDE","c:"+c+" "+prc+"%");
+            if(this.green_perc > prc){
+                prc=this.green_perc;
+            }
+            try{
+                Thread.currentThread().sleep(500);
+            }catch(Exception e){
+                Log.e("LIMITE_CAMPO",e.toString());
+            }
+        }
+        Log.i("POSIZIONE_CORRENTE_VERDE",prc+"%");
+        if(prc > 50){
             result=true;
+            if(posizione.getOrientazione().equals(Position.orientazione_destra) &&
+                    posizione.getNumero_colonne() > posizione.getColonna()+1){
+                posizione.aggiorna_campo(posizione.getNumero_righe(),posizione.getColonna()+1);
+            }else if(posizione.getOrientazione().equals(Position.orientazione_alto) &&
+                    posizione.getNumero_righe() > posizione.getRiga()+1){
+                posizione.aggiorna_campo(posizione.getRiga()+1,posizione.getNumero_colonne());
+            }
         }
         Log.i("LIMITE_CAMPO_DEBUG","Percentuale verde: "+prc);
-
-        if(posizione.getOrientazione().equals(Position.orientazione_destra) &&
-                posizione.getNumero_colonne() > posizione.getColonna()+1){
-            posizione.aggiorna_campo(posizione.getNumero_righe(),posizione.getColonna()+1);
-        }else if(posizione.getOrientazione().equals(Position.orientazione_alto) &&
-                posizione.getNumero_righe() > posizione.getRiga()+1){
-            posizione.aggiorna_campo(posizione.getRiga()+1,posizione.getNumero_colonne());
-        }
-
         return result;
     }
 
@@ -307,59 +330,66 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
         }
     }
 
-    private void move(String action){
+    private boolean move(String action){
+        boolean result=false;
         if(action.equals(Position.muovi_avanti) || action.equals(Position.muovi_indietro)){
-            move(action,velocita_default_avanti_indietro,tempo_1_casella);
+            result = move(action,velocita_default_avanti_indietro,tempo_1_casella);
         }else if(action.equals(Position.muovi_ruota_sinistra) || action.equals(Position.muovi_ruota_destra)){
-            move(action,velocita_default_rotazione,tempo_90_gradi);
+            result = move(action,velocita_default_rotazione,tempo_90_gradi);
         }else{
             Log.e("MOVE_DEBUG","Errore: azione '" + action + "' non riconosciuta.");
         }
+        return result;
     }
 
-    private void move(String action, int speed, int time){
+    private boolean move(String action, int speed, int time){
+        boolean result=posizione.muovi(action);
         int speed_dx = 0;
         int speed_sx = 0;
-        Log.i("GIROSCOPIO_MOVE_DEBUG","Prima effettivi: "+gradi()+" calcolati: "+gradi_destinazione);
-        if(action.equals(Position.muovi_avanti)){
-            speed_dx = speed;
-            speed_sx = speed;
-        }else if(action.equals(Position.muovi_indietro)){
-            speed_dx = -speed;
-            speed_sx = -speed;
-        }else if(action.equals(Position.muovi_ruota_destra)){
+        if(result) {
+            Log.i("GIROSCOPIO_MOVE_DEBUG", "Prima effettivi: " + gradi() + " calcolati: " + gradi_destinazione);
+            if (action.equals(Position.muovi_avanti)) {
+                speed_dx = speed;
+                speed_sx = speed;
+            } else if (action.equals(Position.muovi_indietro)) {
+                speed_dx = -speed;
+                speed_sx = -speed;
+            } else if (action.equals(Position.muovi_ruota_destra)) {
 
-            gradi_destinazione=(gradi_destinazione+90)%360;
+                gradi_destinazione = (gradi_destinazione + 90) % 360;
 
-            speed_dx = -speed;
-            speed_sx = speed;
-        }else if(action.equals(Position.muovi_ruota_sinistra)){
+                speed_dx = -speed;
+                speed_sx = speed;
+            } else if (action.equals(Position.muovi_ruota_sinistra)) {
 
-            gradi_destinazione=(gradi_destinazione-90)%360;
-            if (gradi_destinazione<0){
-                gradi_destinazione = 360 + gradi_destinazione;
+                gradi_destinazione = (gradi_destinazione - 90) % 360;
+                if (gradi_destinazione < 0) {
+                    gradi_destinazione = 360 + gradi_destinazione;
+                }
+
+                speed_dx = speed;
+                speed_sx = -speed;
+            } else {
+                Log.e("MOVE_DEBUG", "Errore: azione '" + action + "' non riconosciuta.");
+            }
+            try {
+                sharedElements.motorLeft.setTimeSpeed(speed_sx, 0, time, 0, true);
+                sharedElements.motorRight.setTimeSpeed(speed_dx, 0, time, 0, true);
+            } catch (Exception e) {
+                Log.e("MOVE_DEBUG", e.toString());
+            }
+            try {
+                Thread.currentThread().sleep(time + 1000);
+            } catch (Exception e) {
+                Log.e("MOVE_DEBUG", e.toString());
             }
 
-            speed_dx = speed;
-            speed_sx = -speed;
-        }else{
-            Log.e("MOVE_DEBUG","Errore: azione '" + action + "' non riconosciuta.");
-        }
-        try{
-            sharedElements.motorLeft.setTimeSpeed(speed_sx, 0, time, 0, true);
-            sharedElements.motorRight.setTimeSpeed(speed_dx, 0, time, 0, true);
-        }catch (Exception e){
-            Log.e("MOVE_DEBUG",e.toString());
-        }
-        try{
-            Thread.currentThread().sleep(time+1000);
-        }catch (Exception e){
-            Log.e("MOVE_DEBUG",e.toString());
-        }
+            correggi_angolo();
 
-        correggi_angolo();
-
-        Log.i("GIROSCOPIO_MOVE_DEBUG","Dopo: "+gradi()+" calcolati: "+gradi_destinazione);
+            Log.i("GIROSCOPIO_MOVE_DEBUG", "Dopo: " + gradi() + " calcolati: " + gradi_destinazione);
+        }
+        print_p();
+        return result;
     }
     //
 
@@ -461,7 +491,7 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
                     ArrayList<Ball> f = ballFinder.findBalls(frame3);
                     //Mat ret = ballFinder.findBalls(frame3);
 
-                    GreenFinder gFinder = new GreenFinder(frame_cut, true, frame.height() / 2, 100);
+                    GreenFinder gFinder = new GreenFinder(frame_cut, true, 440, 80);
                     gFinder.setViewRatio(0.0f);
                     gFinder.setOrientation("landscape");
                     //Mat ret = gFinder.findGreen();
