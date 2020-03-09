@@ -40,6 +40,8 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.photo.Photo;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 
 import it.unive.dais.legodroid.lib.plugs.GyroSensor;
@@ -64,6 +66,7 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
     public float gradi_destinazione;
     private boolean check_camera = true;
     private double green_perc=0;
+    ArrayList<Ball> elenco_mine;
     //
 
     private Level1ViewModel level1ViewModel;
@@ -195,13 +198,14 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
                 Log.i("GIROSCOPIO_DEBUG",gradi()+"");
             }
         }, 1000, 1000);*/
-        print_p();
 
-        Log.i("POSIZIONE_CORRENTE_CAMPO","r:"+posizione.getNumero_righe()+" c:"+posizione.getNumero_colonne());
+       /*print_pc();
+
         move(Position.muovi_avanti);
         limite_campo();
         move(Position.muovi_avanti);
-        Log.i("POSIZIONE_CORRENTE_CAMPO","r:"+posizione.getNumero_righe()+" c:"+posizione.getNumero_colonne());
+       */
+
         /*move(Position.muovi_ruota_destra);
         move(Position.muovi_avanti);
         move(Position.muovi_ruota_sinistra);
@@ -210,23 +214,115 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
 
         //grab();
         //release();
+        Log.e("CERCA_DEBUG","porcoddio");
 
-        /*int riga_ultima_rilevazione=-1;
-        boolean ultima_riga_raggiunta = false;
-        boolean mina_trovata = false;
-        while(ultima_riga_raggiunta){
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                int i = 0;
+                Ball bb;
+                Iterator<Ball> iti = elenco_mine.iterator();
+                while(iti.hasNext() && i==0){
+                    bb=iti.next();
+                    Log.i("CERCA_DEBUG",bb.color);
+                    i++;
+                }
+                Log.e("CERCA_DEBUG","porcoddio");
+            }
+        }, 1000, 1000);
 
-        }*/
+        cerca_mina_distante();
+
     }
 
 
     // CASA
+    private void raccogli_mina(Ball x){
+        float gradi_inizio = gradi_destinazione;
+
+        //Punta la mina, in modo che il centro del cerchio sia al centro dello schermo
+        punta_mina(x);
+
+        //Avanzo verso la mina
+        move(Position.muovi_avanti);
+
+        //Raccolgo la mina
+        grab();
+
+        //Ritorno alla posizione iniziale
+        gradi_destinazione = gradi_inizio;
+        move(Position.muovi_indietro);
+
+    }
+
+    private void punta_mina(Ball b){
+        double bx = b.center.x;
+        String bc = b.color;
+        String d=null;
+        if(bx > 243){
+            d=Position.muovi_ruota_destra;
+        }else if(bx < 237){
+            d=Position.muovi_ruota_sinistra;
+        }
+        while(bx > 243 || bx < 237) {
+            move_correggi_angolo(d, 10, 200);
+            Ball t = cerca_mina_vicino(bc);
+            if(t!=null){
+                bx=t.center.x;
+            }
+        }
+    }
+
+    //Cerca la mina più grande del colore specificato nei parametri
+    private Ball cerca_mina_vicino(String c){
+        Ball result=null;
+        Ball b=null;
+        for (int i=0; i<5;i++){
+            try{
+                Iterator<Ball> iter = elenco_mine.iterator();
+                while(iter.hasNext()){
+                    b=iter.next();
+                    if(c.equals(b.color) && (b==null || b.radius>result.radius)){
+                        result = b;
+                    }
+                }
+                Thread.currentThread().sleep(500);
+            }catch(Exception e){
+                Log.e("LIMITE_CAMPO",e.toString());
+            }
+        }
+        return result;
+    }
+
+    private Ball cerca_mina_distante(){
+        Ball result=null;
+        Ball b=null;
+        for (int c=0; c<5;c++){
+            try{
+                Iterator<Ball> iter = elenco_mine.iterator();
+                while(iter.hasNext()){
+                    b=iter.next();
+                    Log.i("CERCA_DEBUG","x:"+result.center.x+" y:"+result.center.y+" r:"+result.radius+" c:"+result.color);
+                    if(b.center.x > 192 && b.center.x < 288){
+                        result = b;
+                    }
+                }
+                Thread.currentThread().sleep(1000);
+            }catch(Exception e){
+                Log.e("LIMITE_CAMPO",e.toString());
+            }
+        }
+        return result;
+    }
+
     private void use_opencv(Boolean b){
         this.check_camera=b;
     }
 
-    private void print_p(){
-        Log.i("POSIZIONE_CORRENTE",posizione.getOrientazione()+" r:"+posizione.getRiga()+" c:"+posizione.getColonna());
+    private void print_pc(){
+        Log.i("POSIZIONE_DEBUG",posizione.getOrientazione()+" r:"+posizione.getRiga()+" c:"+posizione.getColonna());
+        Log.i("CAMPO_DEBUG","r:"+posizione.getNumero_righe()+" c:"+posizione.getNumero_colonne());
     }
 
     private boolean limite_campo(){
@@ -383,12 +479,10 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
             } catch (Exception e) {
                 Log.e("MOVE_DEBUG", e.toString());
             }
-
             correggi_angolo();
-
             Log.i("GIROSCOPIO_MOVE_DEBUG", "Dopo: " + gradi() + " calcolati: " + gradi_destinazione);
         }
-        print_p();
+        print_pc();
         return result;
     }
     //
@@ -489,6 +583,16 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
                     ballFinder.setViewRatio(0.0f);
                     ballFinder.setOrientation("landscape");
                     ArrayList<Ball> f = ballFinder.findBalls(frame3);
+                    elenco_mine = new ArrayList<Ball>(f);
+                    /*Ball bb;
+                    Iterator<Ball> iti = elenco_mine.iterator();
+                    while(iti.hasNext()){
+                        bb=iti.next();
+                        Log.i("CERCA_DEBUG",bb.color);
+                    }*/
+
+
+                    //Collections.copy(elenco_mine,f);
                     //Mat ret = ballFinder.findBalls(frame3);
 
                     GreenFinder gFinder = new GreenFinder(frame_cut, true, 440, 80);
