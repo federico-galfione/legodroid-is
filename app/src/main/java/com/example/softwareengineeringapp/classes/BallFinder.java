@@ -201,27 +201,28 @@ public class BallFinder {
                 else
                     color = "unknown";
 
-                Ball myBall = new Ball(new Point(center.x,center.y), radius[0], color);
-                boolean chk = checkBalls(balls, myBall);
-                boolean chk2 = true;
-                if(chk)
-                    chk2 = check_existance(center,radius[0],mask);
+                if(!color.equals("unknown")){
+                    Ball myBall = new Ball(new Point(center.x,center.y), radius[0], color);
+                    boolean chk = checkBalls(balls, myBall);
+                    boolean chk2 = true;
+                    if(chk)
+                        chk2 = check_existance(center,radius[0],mask);
+                    if (debug && chk2) {
+                        balls.add(myBall);
+                        Scalar color_rgb;
 
-                if (debug && chk2) {
-                    balls.add(myBall);
-                    Scalar color_rgb;
+                        if (color == "red")
+                            color_rgb = new Scalar(255, 0, 0);
+                        else if (color == "blue")
+                            color_rgb = new Scalar(0, 0, 255);
+                        else if (color == "yellow")
+                            color_rgb = new Scalar(255, 255, 0);
+                        else
+                            color_rgb = new Scalar(0, 0, 0);
 
-                    if (color == "red")
-                        color_rgb = new Scalar(255, 0, 0);
-                    else if (color == "blue")
-                        color_rgb = new Scalar(0, 0, 255);
-                    else if (color == "yellow")
-                        color_rgb = new Scalar(255, 255, 0);
-                    else
-                        color_rgb = new Scalar(0, 0, 0);
-
-                    if (color == "red" || color == "blue" || color == "yellow") {
-                        Imgproc.circle(destinazione, center, (int) radius[0], color_rgb, 2);
+                        //if (color == "red" || color == "blue" || color == "yellow") {
+                            Imgproc.circle(destinazione, center, (int) radius[0], color_rgb, 2);
+                        //}
                     }
                 }
             }

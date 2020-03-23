@@ -2,6 +2,8 @@ package com.example.softwareengineeringapp.classes;
 
 import android.util.Log;
 
+import java.util.ArrayList;
+
 public class Position {
 
     /*
@@ -45,6 +47,121 @@ public class Position {
 
     public Position(int numero_righe, int numero_colonne){
         aggiorna_campo(numero_righe,numero_colonne);
+    }
+
+
+    public ArrayList<String> calcola_percorso(int target_r, int target_c){
+
+        ArrayList<String> result = new ArrayList<>();
+
+        int temp_r = riga;
+        int temp_c = colonna;
+        String temp_o = orientazione;
+
+        String posizione_target_c;
+        String posizione_target_r;
+
+        while(target_r!=temp_r && target_c!=temp_c){
+
+            if(target_c > temp_c){
+                posizione_target_c = Position.orientazione_destra;
+            }else if(target_c < temp_c){
+                posizione_target_c = Position.orientazione_sinistra;
+            }else{
+                posizione_target_c = "x";
+            }
+
+            if(target_r > temp_r){
+                posizione_target_r = Position.orientazione_alto;
+            }else if(target_r < temp_r){
+                posizione_target_r = Position.orientazione_basso;
+            }else{
+                posizione_target_r = "x";
+            }
+
+            if(!posizione_target_r.equals(temp_o) && !posizione_target_r.equals("x")){
+
+                switch (temp_o){
+                    case Position.orientazione_basso:
+                        result.add(Position.muovi_ruota_destra);
+                        result.add(Position.muovi_ruota_destra);
+                        break;
+                    case Position.orientazione_alto:
+                        result.add(Position.muovi_ruota_destra);
+                        result.add(Position.muovi_ruota_destra);
+                        break;
+                    case Position.orientazione_destra:
+                        if(posizione_target_r.equals(Position.orientazione_alto)){
+                            result.add(Position.muovi_ruota_sinistra);
+                        }else{
+                            result.add(Position.muovi_ruota_destra);
+                        }
+                        break;
+                    case Position.orientazione_sinistra:
+                        if(posizione_target_r.equals(Position.orientazione_alto)){
+                            result.add(Position.muovi_ruota_destra);
+                        }else{
+                            result.add(Position.muovi_ruota_sinistra);
+                        }
+                        break;
+                }
+
+                temp_o = posizione_target_r;
+
+            }else if(posizione_target_r.equals("x")){
+
+                if (!posizione_target_c.equals(temp_o) && !posizione_target_c.equals("x")) {
+                    switch (temp_o) {
+                        case Position.orientazione_basso:
+                            if (posizione_target_c.equals(Position.orientazione_destra)) {
+                                result.add(Position.muovi_ruota_sinistra);
+                            } else {
+                                result.add(Position.muovi_ruota_destra);
+                            }
+                            break;
+                        case Position.orientazione_alto:
+                            if (posizione_target_c.equals(Position.orientazione_destra)) {
+                                result.add(Position.muovi_ruota_destra);
+                            } else {
+                                result.add(Position.muovi_ruota_sinistra);
+                            }
+                            break;
+                        case Position.orientazione_destra:
+                            result.add(Position.muovi_ruota_destra);
+                            result.add(Position.muovi_ruota_destra);
+                            break;
+                        case Position.orientazione_sinistra:
+                            result.add(Position.muovi_ruota_destra);
+                            result.add(Position.muovi_ruota_destra);
+                            break;
+                    }
+
+                    temp_o = posizione_target_r;
+                }else if (posizione_target_c.equals(temp_o)){
+                    switch (temp_o){
+                        case Position.orientazione_destra:
+                            temp_c++;
+                            break;
+                        case Position.orientazione_sinistra:
+                            temp_c--;
+                            break;
+                    }
+                    result.add(Position.muovi_avanti);
+                }
+            }else{
+                switch (temp_o){
+                    case Position.orientazione_alto:
+                        temp_r++;
+                        break;
+                    case Position.orientazione_basso:
+                        temp_r--;
+                        break;
+                }
+                result.add(Position.muovi_avanti);
+            }
+        }
+
+        return result;
     }
 
 

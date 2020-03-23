@@ -64,7 +64,8 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
     public static final int velocita_default_rotazione = 10;
     public static final int velocita_default_grab_release = 40;
     public float gradi_destinazione;
-    private boolean check_camera = true;
+    private boolean check_camera = false;
+    private boolean trova_linee = false;
     private double green_perc=0;
     ArrayList<Ball> elenco_mine;
     //
@@ -191,6 +192,7 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
     }
 
     private void movementTest(){
+        Log.e("CERCA_DEBUG","HERE WE GO!");
        /* Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -214,25 +216,13 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
 
         //grab();
         //release();
-        Log.e("CERCA_DEBUG","porcoddio");
 
-        Timer timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                int i = 0;
-                Ball bb;
-                Iterator<Ball> iti = elenco_mine.iterator();
-                while(iti.hasNext() && i==0){
-                    bb=iti.next();
-                    Log.i("CERCA_DEBUG",bb.color);
-                    i++;
-                }
-                Log.e("CERCA_DEBUG","porcoddio");
-            }
-        }, 1000, 1000);
 
-        cerca_mina_distante();
+        //Ball result = cerca_mina_distante();
+        use_opencv(true);
+        Ball result2 = cerca_mina_vicino("yellow");
+
+        use_opencv(false);
 
     }
 
@@ -273,46 +263,198 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
             }
         }
     }
-
-    //Cerca la mina più grande del colore specificato nei parametri
-    private Ball cerca_mina_vicino(String c){
+    private Ball cerca_mina_vicino(){
+        ArrayList<Ball> bl = new ArrayList<>();
         Ball result=null;
         Ball b=null;
-        for (int i=0; i<5;i++){
+        int red=0;
+        int blue=0;
+        int yellow=0;
+        for (int i=0; i<10;i++){
             try{
                 Iterator<Ball> iter = elenco_mine.iterator();
                 while(iter.hasNext()){
                     b=iter.next();
-                    if(c.equals(b.color) && (b==null || b.radius>result.radius)){
+                    if(result==null || b.radius>result.radius){
                         result = b;
+                    }
+                }
+                if(result!=null){
+                    //Log.i("CERCA_DEBUG", "x:"+result.center.x+" c:"+result.color);
+                    bl.add(result);
+                    switch (result.color){
+                        case "red":
+                            red++;
+                            break;
+                        case "blue":
+                            blue++;
+                            break;
+                        case "yellow":
+                            yellow++;
+                            break;
+                    }
+                    result = null;
+                }
+                Thread.currentThread().sleep(500);
+            }catch(Exception e){
+                Log.e("CERCA_DEBUG",e.toString());
+            }
+        }
+
+        String n_mag = "";
+        if(red >= blue && red >= yellow){
+            n_mag="red";
+        }else if(blue >= red && blue >= yellow){
+            n_mag="blue";
+        }else{
+            n_mag="yellow";
+        }
+
+        Iterator<Ball> iter = bl.iterator();
+        double temp=-1;
+        double bd;
+        while(iter.hasNext()){
+            b=iter.next();
+            //Log.i("CERCA_DEBUG", "x:"+b.center.x+" c:"+b.color);
+            bd=b.radius;
+            if(b.color.equals(n_mag)){
+                if(bd>temp || temp<0){
+                    temp=bd;
+                    result=b;
+                }
+            }
+        }
+
+        if(result==null){
+            Log.i("CERCA_DEBUG", "OUTPUT -> null");
+        }else {
+            Log.i("CERCA_DEBUG", "OUTPUT -> r:" + result.center.x + " c:" + result.color);
+        }
+
+        return result;
+    }
+
+    //Cerca la mina più grande del colore specificato nei parametri
+    private Ball cerca_mina_vicino(String c){
+        ArrayList<Ball> bl = new ArrayList<>();
+        Ball result=null;
+        Ball b;
+        for (int i=0; i<5;i++){
+            try{
+                if(elenco_mine!=null) {
+                    Iterator<Ball> iter = elenco_mine.iterator();
+                    while (iter.hasNext()) {
+                        b = iter.next();
+                        if (c.equals(b.color) && (result == null || b.radius > result.radius)) {
+                            result = b;
+                            Log.i("CERCA_DEBUG",""+result.radius);
+                        }
+                    }
+                    bl.add(result);
+                    result = null;
+                }
+                Thread.currentThread().sleep(500);
+            }catch(Exception e){
+                Log.e("CERCA_DEBUG",e.toString());
+            }
+        }
+
+        Iterator<Ball> iter = bl.iterator();
+        double temp=-1;
+        double bd;
+        while(iter.hasNext()){
+            b=iter.next();
+            //Log.i("CERCA_DEBUG", "x:"+b.center.x+" c:"+b.color);
+            if(b!=null) {
+                bd = b.radius;
+                if (bd > temp || temp < 0) {
+                    temp = bd;
+                    result = b;
+                }
+            }
+        }
+
+        if(result==null){
+            Log.i("CERCA_DEBUG", "OUTPUT -> null");
+        }else {
+            Log.i("CERCA_DEBUG", "OUTPUT -> r:" + result.center.x + " c:" + result.color);
+        }
+
+        return result;
+    }
+
+
+    private Ball cerca_mina_distante(){
+        ArrayList<Ball> bl = new ArrayList<>();
+        Ball result=null;
+        Ball b;
+        int red=0;
+        int blue=0;
+        int yellow=0;
+        for (int c=0; c<10;c++){
+            try{
+                if(elenco_mine!=null){
+                    Iterator<Ball> iter = elenco_mine.iterator();
+                    while(iter.hasNext()){
+                        b=iter.next();
+                        b.toString();
+                        if(b.center.x > 192 && b.center.x < 288){
+                            result = b;
+                        }
+                    }
+                    if(result!=null){
+                        //Log.i("CERCA_DEBUG", "x:"+result.center.x+" c:"+result.color);
+                        bl.add(result);
+                        switch (result.color){
+                            case "red":
+                                red++;
+                                break;
+                            case "blue":
+                                blue++;
+                                break;
+                            case "yellow":
+                                yellow++;
+                                break;
+                        }
+                        result = null;
                     }
                 }
                 Thread.currentThread().sleep(500);
             }catch(Exception e){
-                Log.e("LIMITE_CAMPO",e.toString());
+                Log.e("CERCA_DEBUG",e.toString());
             }
         }
-        return result;
-    }
 
-    private Ball cerca_mina_distante(){
-        Ball result=null;
-        Ball b=null;
-        for (int c=0; c<5;c++){
-            try{
-                Iterator<Ball> iter = elenco_mine.iterator();
-                while(iter.hasNext()){
-                    b=iter.next();
-                    Log.i("CERCA_DEBUG","x:"+result.center.x+" y:"+result.center.y+" r:"+result.radius+" c:"+result.color);
-                    if(b.center.x > 192 && b.center.x < 288){
-                        result = b;
-                    }
+        String n_mag = "";
+        if(red >= blue && red >= yellow){
+            n_mag="red";
+        }else if(blue >= red && blue >= yellow){
+            n_mag="blue";
+        }else{
+            n_mag="yellow";
+        }
+
+        Iterator<Ball> iter = bl.iterator();
+        double temp=-1;
+        double bd;
+        while(iter.hasNext()){
+            b=iter.next();
+            //Log.i("CERCA_DEBUG", "x:"+b.center.x+" c:"+b.color);
+            bd=Math.abs(max_frame_height/2 - b.center.x);
+            if(b.color.equals(n_mag)){
+                if(bd<temp || temp<0){
+                    temp=bd;
+                    result=b;
                 }
-                Thread.currentThread().sleep(1000);
-            }catch(Exception e){
-                Log.e("LIMITE_CAMPO",e.toString());
             }
         }
+
+        if(result==null){
+            Log.i("CERCA_DEBUG", "OUTPUT -> null");
+        }else {
+            Log.i("CERCA_DEBUG", "OUTPUT -> x:" + result.center.x + " c:" + result.color);
+        }
+
         return result;
     }
 
@@ -487,22 +629,6 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
     }
     //
 
-    /*
-    private void manageBall(boolean operation){
-        try {
-            if (operation) {
-                sharedElements.motorGrab.setTimeSpeed(100, 0, 1000, 0, true);
-                sharedElements.grabbed = true;
-                Log.i("DISTANCE","Grabbato");
-
-            } else {
-                sharedElements.motorGrab.setTimeSpeed(-100, 0, 1000, 0, true);
-                sharedElements.grabbed = false;
-            }
-            Thread.currentThread().sleep(1500);
-        }catch(Exception e){}
-    }*/
-
     private void manageOpenCV(View root){
         //OPEN//////////////////////////////////////////////////////////////////////////////////////
         // Configura l'elemento della camera
@@ -565,25 +691,25 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
                 //Imgproc.cvtColor(frame,frame,Imgproc.COLOR_RGB2BGR);
 
                 if(check_camera) {
-                    LineFinder lineFinder = new LineFinder(frame_cut, true);
-                    lineFinder.setThreshold(300, 20);
-                    lineFinder.setOrientation("landscape");
-
-                    ArrayList<Double> li = lineFinder.findLine(frame3);
-                    Iterator<Double> iter = li.iterator();
-                    String ang = "";
-                    while (iter.hasNext()) {
-                        ang = ang + "  " + iter.next();
+                    if(trova_linee) {
+                        LineFinder lineFinder = new LineFinder(frame_cut, true);
+                        lineFinder.setThreshold(300, 20);
+                        lineFinder.setOrientation("landscape");
+                        ArrayList<Double> li = lineFinder.findLine(frame3);
+                        Iterator<Double> iter = li.iterator();
+                        String ang = "";
+                        while (iter.hasNext()) {
+                            ang = ang + "  " + iter.next();
+                        }
+                        Log.e("line", ang
+                                //String.valueOf(lineFinder.findLine())
+                        );
                     }
-                    Log.e("line", ang
-                            //String.valueOf(lineFinder.findLine())
-                    );
-
                     BallFinder ballFinder = new BallFinder(frame_cut, true);
                     ballFinder.setViewRatio(0.0f);
                     ballFinder.setOrientation("landscape");
                     ArrayList<Ball> f = ballFinder.findBalls(frame3);
-                    elenco_mine = new ArrayList<Ball>(f);
+                    elenco_mine = f;
                     /*Ball bb;
                     Iterator<Ball> iti = elenco_mine.iterator();
                     while(iti.hasNext()){
