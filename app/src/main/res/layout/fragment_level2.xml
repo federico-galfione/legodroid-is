@@ -8,92 +8,62 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp">
 
-        <TextView
-            android:id="@+id/level2_label"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:text="@string/label_level2" />
-
-    </TableRow>
-    <TableRow
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp">
-
-        <EditText
-            android:id="@+id/num_row"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:ems="10"
-            android:maxLength="2"
-            android:hint="@string/numRow"
-            android:importantForAutofill="no"
-            android:inputType="numberDecimal" />
-
-        <EditText
-            android:id="@+id/num_col"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:maxLength="2"
-            android:ems="10"
-            android:hint="@string/numCol"
-            android:importantForAutofill="no"
-            android:inputType="numberDecimal" />
-    </TableRow>
-    <TableRow
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp">
-
-
-        <Button
-            android:id="@+id/create_grid"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/create_grid" />
-
-    </TableRow>
-    <ScrollView
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:scrollbars="none"
-        android:layout_weight="1">
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginTop="16dp"
-            android:paddingBottom="16dp"
-            android:layout_weight="1"
-            >
-
-            <TableLayout
-                android:id="@+id/field_container"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:layout_margin="4dp"
-                android:background="@drawable/border_green"
-                ></TableLayout>
-
-        </TableRow>
-    </ScrollView>
-    <TableRow
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="66dp">
-
         <Button
             android:id="@+id/start_level2_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/start" />
+    </TableRow>
+    <TableRow
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp">
+
+        <Button
+            android:id="@+id/stop_level2_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/stop" />
+    </TableRow>
+    <TableRow
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp">
+
+        <TableLayout
+            android:id="@+id/output_table_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/border_green" />
+    </TableRow>
+
+    <LinearLayout
+        android:id="@+id/layout2"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:scrollbars="none"
+        android:visibility="visible">
+
+        <TextView
+            android:id="@+id/textView3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:background="#4CAF50"
+            android:text="@string/prc"
+            android:visibility="gone" />
+
+        <org.opencv.android.JavaCameraView
+            android:id="@+id/HelloOpenCvView2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/start"
-            ></Button>
-
-    </TableRow>
+            android:visibility="gone"
+            app:camera_id="any"
+            app:show_fps="true"/>
+    </LinearLayout>
 
 </TableLayout>

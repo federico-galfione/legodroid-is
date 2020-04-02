@@ -1,31 +1,26 @@
 package com.example.softwareengineeringapp.ui.level1;
 
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
+import android.graphics.Color;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.annotation.Nullable;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
 import com.example.softwareengineeringapp.MainActivity;
 import com.example.softwareengineeringapp.R;
 import com.example.softwareengineeringapp.classes.Ball;
 import com.example.softwareengineeringapp.classes.BallFinder;
+import com.example.softwareengineeringapp.classes.Coordinates;
 import com.example.softwareengineeringapp.classes.GreenFinder;
 import com.example.softwareengineeringapp.classes.LineFinder;
 import com.example.softwareengineeringapp.classes.Position;
@@ -35,30 +30,27 @@ import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
-import org.opencv.core.Size;
-import org.opencv.imgproc.Imgproc;
 import org.opencv.photo.Photo;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
-
-import it.unive.dais.legodroid.lib.plugs.GyroSensor;
-import it.unive.dais.legodroid.lib.plugs.TachoMotor;
-
-// CASA
 import java.util.Timer;
 import java.util.TimerTask;
-//
 
-public class Level1Fragment extends Fragment implements SensorEventListener {
+import it.unive.dais.legodroid.lib.plugs.GyroSensor;
+import it.unive.dais.legodroid.lib.plugs.LightSensor;
+import it.unive.dais.legodroid.lib.plugs.TachoMotor;
 
-    // CASA
-    //private boolean lock = false;
-    Position posizione;
-    public static final int tempo_1_casella = 1600;
-    public static final int tempo_90_gradi = 1600;
+public class Level1Fragment extends Fragment{
+
+    public static final String giallo = "#FFEB3B";
+    public static final String blu = "#1F92FF";
+    public static final String rosso = "#FF3131";
+
+    private Position posizione;
+    public static final int tempo_1_casella = 2186;  //1600
+    public static final int tempo_90_gradi = 1600;  //1600
     public static final int tempo_grab_release = 1100;
     public static final int velocita_default_avanti_indietro = 30;
     public static final int velocita_default_rotazione = 10;
@@ -66,59 +58,49 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
     public float gradi_destinazione;
     private boolean check_camera = false;
     private boolean trova_linee = false;
+    private boolean trova_mine = false;
+    private boolean trova_limite = false;
     private double green_perc=0;
     ArrayList<Ball> elenco_mine;
-    //
-
+    private boolean stop=false;
+    private BallFinder ballFinder;
+    private GreenFinder greenFinder;
+    private Mat frame;
+    private Mat frame_draw;
+    private Mat frame_cut;
+    private Mat frame_out;
     private Level1ViewModel level1ViewModel;
-
-    private SensorManager sensorManager;
-    private Sensor rotation;
-    private float[] rotationMatrix = new float[9];
-    private float[] orientationAngles = new float[3];
-    private int startOrientation = 0;
-    private int degreeToFollow = 0;
     private Button startLevel1;
     private Button stopLevel1;
-    private TextView gyro;
     private Thread movementTestThread;
+    final Sharing sharedElements = new Sharing();
+    private int max_frame_width = 640;
+    private int max_frame_height = 480;
+    private String TAG = "Level1";
+    private CameraBridgeViewBase mOpenCvCameraView;
+    private TextView greenPrc;
 
-    private boolean flag = false;
+    //output
+    private TableLayout fieldContainer;
+    private ArrayList<Coordinates> field = new ArrayList<>();
+
 
     class Sharing {
-        public volatile int currentDegree = 0;
-        public volatile int startingDegree = 0;
         public volatile TachoMotor motorLeft;
         public volatile  TachoMotor motorRight;
         public volatile TachoMotor motorGrab;
-        public volatile int arrivingDegree = 0;
-        public volatile boolean rotating = false;
-        public volatile boolean grabbed = false;
-
-        // CASA
         public volatile GyroSensor giroscopio;
-        //
 
         public void setMotors(TachoMotor motorLeft, TachoMotor motorRight, TachoMotor motorGrab, GyroSensor giroscopio){
             Log.i("MYLOG MOTORS", motorLeft+"");
             this.motorLeft = motorLeft;
             this.motorRight = motorRight;
             this.motorGrab = motorGrab;
-
             this.giroscopio = giroscopio;
         }
     }
 
-    final Sharing sharedElements = new Sharing();
 
-    //OPEN//////////////////////////////////////////////////////////////////////////////////////////
-    private int max_frame_width = 640;
-    private int max_frame_height = 480;
-
-    private String TAG = "AndroidIngSwOpenCV";
-
-    private CameraBridgeViewBase mOpenCvCameraView;
-    //CLOSE/////////////////////////////////////////////////////////////////////////////////////////
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -128,114 +110,207 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
 
         startLevel1 = root.findViewById(R.id.start_level1_button);
         stopLevel1 = root.findViewById(R.id.stop_level1_button);
-        gyro = root.findViewById(R.id.gyro_level1);
+        greenPrc = root.findViewById(R.id.textView);
+        fieldContainer = root.findViewById(R.id.output_table);
 
         sharedElements.setMotors(MainActivity.motorLeft, MainActivity.motorRight, MainActivity.motorGrab, MainActivity.giroscopio);
         Log.i("MYLOG MAINACTIVITY", MainActivity.motorLeft+"");
 
-
         //CREAZIONE CAMPO
-        posizione = new Position(6,6);
+        posizione = new Position(3,3);
 
-
-        movementTestThread = new Thread(this::movementTest);
-
-        // Instanzio il sensorManager
-        sensorManager = (SensorManager) MainActivity.mainActivity.getSystemService(MainActivity.SENSOR_SERVICE);
-        // Prendo il sensore di rotazione del cellulare
-        rotation = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+        movementTestThread = new Thread(this::startLevel1);
 
         // Al click del pulsante avvia il primo livello
+        startLevel1.setText("AVVIA PROVA");
         startLevel1.setOnClickListener((view) -> {
-            gradi_destinazione=gradi();
-            manageOpenCV(root);
-            if(rotation != null){
-                sensorManager.registerListener(this, rotation, SensorManager.SENSOR_DELAY_FASTEST);
+            switch (startLevel1.getText().toString()){
+                case "AVVIA PROVA":
+                    gradi_destinazione=gradi();
+                    manageOpenCV(root);
+                    movementTestThread.start();
+                    startLevel1.setText("MOSTRA OUTPUT");
+                    break;
+                case "MOSTRA OUTPUT":
+                    createGrid(posizione.getNumero_righe(),posizione.getNumero_colonne());
+                    startLevel1.setText("AGGIORNA OUTPUT");
+                    break;
+                case "AGGIORNA OUTPUT":
+                    createGrid(posizione.getNumero_righe(),posizione.getNumero_colonne());
+                    break;
             }
-            movementTestThread.start();
+
         });
 
         // Blocca i motori
+        stopLevel1.setText("PAUSA");
         stopLevel1.setOnClickListener((view) -> {
             try {
-                sharedElements.motorLeft.stop();
-                sharedElements.motorRight.stop();
-                sharedElements.rotating = false;
-            }catch (Exception e){}
-
+                switch (stopLevel1.getText().toString()){
+                    case "PAUSA":
+                        stop=true;
+                        stopLevel1.setText("RIPRENDI");
+                        break;
+                    case "RIPRENDI":
+                        stop=false;
+                        stopLevel1.setText("PAUSA");
+                        break;
+                }
+            }catch (Exception e){
+                Log.e("ERRORE",e.toString());
+            }
         });
 
 
         return root;
     }
 
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-            SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values);
+    
+    private void startLevel1(){
 
-            if(!flag) {
-                int temp = (Math.round((int) (Math.toDegrees(SensorManager.getOrientation(rotationMatrix, orientationAngles)[0]) + 720 - startOrientation) % 360));
-                startOrientation = temp;
-                flag = true;
-            }
-            sharedElements.currentDegree = (Math.round((int) (Math.toDegrees(SensorManager.getOrientation(rotationMatrix, orientationAngles)[0]) + 720 - startOrientation) % 360));
-
-            Log.i("MYLOG GYRO", "CURRENT: " + sharedElements.currentDegree + " ARRIVING: " + sharedElements.arrivingDegree + " STARTING: " + sharedElements.startingDegree + " ROTATING: " + sharedElements.rotating);
-            gyro.setText(String.valueOf(sharedElements.currentDegree));
-        }
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-    }
-
-    private void movementTest(){
-        Log.e("CERCA_DEBUG","HERE WE GO!");
-       /* Timer timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
+        Timer gc = new Timer();
+        gc.schedule(new TimerTask() {
             @Override
             public void run() {
-                Log.i("GIROSCOPIO_DEBUG",gradi()+"");
+                Runtime.getRuntime().gc();
             }
-        }, 1000, 1000);*/
+        },0,5000);
 
-       /*print_pc();
-
-        move(Position.muovi_avanti);
-        limite_campo();
-        move(Position.muovi_avanti);
-       */
-
-        /*move(Position.muovi_ruota_destra);
-        move(Position.muovi_avanti);
-        move(Position.muovi_ruota_sinistra);
-        move(Position.muovi_avanti);
-        move(Position.muovi_indietro);*/
-
-        //grab();
-        //release();
+        this.greenPrc.setVisibility(View.VISIBLE);
+        this.ballFinder = new BallFinder(null, true);
+        this.greenFinder = new GreenFinder(null, true, 390, 100);
 
 
-        //Ball result = cerca_mina_distante();
-        use_opencv(true);
-        Ball result2 = cerca_mina_vicino("yellow");
+        Log.e("CERCA_DEBUG","HERE WE GO!");
+        manage_opencv(false);
 
-        use_opencv(false);
+        ArrayList<String> mosse = new ArrayList<>();
+
+        boolean controlla_davanti = true;
+        Ball target=null;
+        Ball m = null;
+        int ultima_riga = 0;
+        boolean search = true;
+        boolean mina_raggiunta = false;
+        boolean trasporta_mina = false;
+        boolean ok=true;
+        boolean prova_in_corso = true;
+
+        while (prova_in_corso){
+            if (controlla_davanti) {
+                target = cerca_mina_distante();
+                target = cerca_mina_distante();
+                if (target != null) {
+                    while (!mina_raggiunta) {
+                        m = cerca_mina_vicino(target.color);
+                        m = cerca_mina_vicino(target.color);
+                        if (m == null) {
+                            move(Position.muovi_avanti);
+                            mosse.add(0,Position.muovi_avanti);
+                        } else {
+                            Log.e("CERCA_DEBUG","Raccolta avviata");
+                            raccogli_mina(m);
+                            trasporta_mina = true;
+                            mina_raggiunta = true;
+                            search = false;
+                            controlla_davanti = false;
+                        }
+                    }
+                } else {
+                    controlla_davanti = false;
+                }
+            } else if (trasporta_mina) {
+                //ritorna a 0 0, rilascia la mina e ritona in posizione di partenza
+                move(Position.muovi_ruota_destra);
+                if(posizione.getColonna()>0){
+                    move(Position.muovi_ruota_destra);
+                }
+                String ei;
+                Iterator<String> it = mosse.iterator();
+                while(it.hasNext()){
+                    ei=it.next();
+                    move(ei);
+                    it.remove();
+                }
+                move(Position.muovi_avanti); //entro in zona sicura
+                release();
+                move(Position.muovi_indietro); //esco dalla zona sicura
+                if(posizione.getOrientazione().equals(Position.orientazione_sinistra)){
+                   move(Position.muovi_ruota_destra);
+                }else{
+                    if(ultima_riga==0){
+                        move(Position.muovi_ruota_sinistra);
+                    }else{
+                        move(Position.muovi_ruota_destra);
+                        move(Position.muovi_ruota_destra);
+                    }
+                }
+                trasporta_mina = false;
+                mina_raggiunta = false;
+                search = true;
+            } else {
+                while (search) {
+                    while (posizione.getRiga() < ultima_riga && ok) {
+                        ok = move(Position.muovi_avanti);
+                        if (ok) {
+                            mosse.add(0,Position.muovi_avanti);
+                        }
+                    }
+                    if (ok) {
+                        if(!posizione.getOrientazione().equals(Position.orientazione_destra)){
+                            move(Position.muovi_ruota_destra);
+                        }
+                        target = cerca_mina_distante();
+                        target = cerca_mina_distante();
+                        if (target != null) {
+                            mosse.add(0,Position.muovi_ruota_sinistra);
+                            while (!mina_raggiunta) {
+                                m = cerca_mina_vicino(target.color);
+                                m = cerca_mina_vicino(target.color);
+                                if (m == null) {
+                                    move(Position.muovi_avanti);
+                                    mosse.add(0,Position.muovi_avanti);
+                                } else {
+                                    if(posizione.getColonna()==0){
+                                        mosse.remove(0);
+                                    }
+                                    raccogli_mina(m);
+                                    trasporta_mina = true;
+                                    mina_raggiunta = true;
+                                    search = false;
+                                }
+                            }
+                        } else {
+                            move(Position.muovi_ruota_sinistra);
+                            ultima_riga++;
+                        }
+                    }else{
+                        //PROVA TERMINATA, LIMITE SUPERIORE CAMPO RAGGIUNTO
+                        move(Position.muovi_ruota_destra);
+                        move(Position.muovi_ruota_destra);
+                        while (posizione.getRiga() > 0){
+                            move(Position.muovi_avanti);
+                        }
+                        search = false;
+                        prova_in_corso = false;
+                    }
+                }
+            }
+        }
+
 
     }
 
-
-    // CASA
     private void raccogli_mina(Ball x){
         float gradi_inizio = gradi_destinazione;
 
         //Punta la mina, in modo che il centro del cerchio sia al centro dello schermo
         punta_mina(x);
+        gradi_destinazione = gradi();
 
         //Avanzo verso la mina
         move(Position.muovi_avanti);
+        field.add(new Coordinates(posizione.getRiga(),posizione.getColonna(),x.color));
 
         //Raccolgo la mina
         grab();
@@ -243,7 +318,6 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
         //Ritorno alla posizione iniziale
         gradi_destinazione = gradi_inizio;
         move(Position.muovi_indietro);
-
     }
 
     private void punta_mina(Ball b){
@@ -255,14 +329,16 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
         }else if(bx < 237){
             d=Position.muovi_ruota_sinistra;
         }
-        while(bx > 243 || bx < 237) {
-            move_correggi_angolo(d, 10, 200);
+        while(bx > 260 || bx < 220) {
+            move_correggi_angolo(d, 10, 150);
+
             Ball t = cerca_mina_vicino(bc);
             if(t!=null){
                 bx=t.center.x;
             }
         }
     }
+
     private Ball cerca_mina_vicino(){
         ArrayList<Ball> bl = new ArrayList<>();
         Ball result=null;
@@ -280,7 +356,6 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
                     }
                 }
                 if(result!=null){
-                    //Log.i("CERCA_DEBUG", "x:"+result.center.x+" c:"+result.color);
                     bl.add(result);
                     switch (result.color){
                         case "red":
@@ -315,7 +390,6 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
         double bd;
         while(iter.hasNext()){
             b=iter.next();
-            //Log.i("CERCA_DEBUG", "x:"+b.center.x+" c:"+b.color);
             bd=b.radius;
             if(b.color.equals(n_mag)){
                 if(bd>temp || temp<0){
@@ -336,6 +410,9 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
 
     //Cerca la mina più grande del colore specificato nei parametri
     private Ball cerca_mina_vicino(String c){
+
+        manage_opencv(true,false,true,false);
+
         ArrayList<Ball> bl = new ArrayList<>();
         Ball result=null;
         Ball b;
@@ -347,7 +424,6 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
                         b = iter.next();
                         if (c.equals(b.color) && (result == null || b.radius > result.radius)) {
                             result = b;
-                            Log.i("CERCA_DEBUG",""+result.radius);
                         }
                     }
                     bl.add(result);
@@ -364,10 +440,9 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
         double bd;
         while(iter.hasNext()){
             b=iter.next();
-            //Log.i("CERCA_DEBUG", "x:"+b.center.x+" c:"+b.color);
             if(b!=null) {
                 bd = b.radius;
-                if (bd > temp || temp < 0) {
+                if ((bd > temp || temp < 0) && bd>=40) {
                     temp = bd;
                     result = b;
                 }
@@ -375,35 +450,38 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
         }
 
         if(result==null){
-            Log.i("CERCA_DEBUG", "OUTPUT -> null");
+            Log.i("CERCA_DEBUG", "VICINO OUTPUT -> null");
         }else {
-            Log.i("CERCA_DEBUG", "OUTPUT -> r:" + result.center.x + " c:" + result.color);
+            Log.i("CERCA_DEBUG", "VICINO OUTPUT -> c:" + result.center.x + " r:" + result.radius +" c:" + result.color);
         }
 
+        manage_opencv(false);
         return result;
     }
 
 
     private Ball cerca_mina_distante(){
+
+        manage_opencv(true,false,true,false);
+
         ArrayList<Ball> bl = new ArrayList<>();
         Ball result=null;
         Ball b;
         int red=0;
         int blue=0;
         int yellow=0;
-        for (int c=0; c<10;c++){
+        for (int c=0; c<5;c++){
             try{
                 if(elenco_mine!=null){
                     Iterator<Ball> iter = elenco_mine.iterator();
                     while(iter.hasNext()){
                         b=iter.next();
                         b.toString();
-                        if(b.center.x > 192 && b.center.x < 288){
+                        if(b.center.x > 160 && b.center.x < 320 && b.center.y<390 && b.radius>5){
                             result = b;
                         }
                     }
                     if(result!=null){
-                        //Log.i("CERCA_DEBUG", "x:"+result.center.x+" c:"+result.color);
                         bl.add(result);
                         switch (result.color){
                             case "red":
@@ -439,7 +517,6 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
         double bd;
         while(iter.hasNext()){
             b=iter.next();
-            //Log.i("CERCA_DEBUG", "x:"+b.center.x+" c:"+b.color);
             bd=Math.abs(max_frame_height/2 - b.center.x);
             if(b.color.equals(n_mag)){
                 if(bd<temp || temp<0){
@@ -450,16 +527,24 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
         }
 
         if(result==null){
-            Log.i("CERCA_DEBUG", "OUTPUT -> null");
+            Log.i("CERCA_DEBUG", "DISTANTE OUTPUT -> null");
         }else {
-            Log.i("CERCA_DEBUG", "OUTPUT -> x:" + result.center.x + " c:" + result.color);
+            Log.i("CERCA_DEBUG", "DISTANTE OUTPUT -> x:" + result.center.x + " r:"+result.radius+" c:" + result.color);
         }
+
+        manage_opencv(false);
 
         return result;
     }
 
-    private void use_opencv(Boolean b){
-        this.check_camera=b;
+    private void manage_opencv(Boolean opencv_attivo,boolean linee,boolean mine,boolean limite){
+        this.check_camera=opencv_attivo;
+        this.trova_linee=linee;
+        this.trova_mine=mine;
+        this.trova_limite=limite;
+    }
+    private void manage_opencv(Boolean opencv_attivo){
+        this.check_camera=opencv_attivo;
     }
 
     private void print_pc(){
@@ -468,10 +553,12 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
     }
 
     private boolean limite_campo(){
+
+        manage_opencv(true,false,false,true);
+
         boolean result=false;
         double prc = this.green_perc;
         for (int c=0; c<5;c++){
-            Log.i("POSIZIONE_CORRENTE_VERDE","c:"+c+" "+prc+"%");
             if(this.green_perc > prc){
                 prc=this.green_perc;
             }
@@ -481,8 +568,7 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
                 Log.e("LIMITE_CAMPO",e.toString());
             }
         }
-        Log.i("POSIZIONE_CORRENTE_VERDE",prc+"%");
-        if(prc > 50){
+        if(prc >= 40){
             result=true;
             if(posizione.getOrientazione().equals(Position.orientazione_destra) &&
                     posizione.getNumero_colonne() > posizione.getColonna()+1){
@@ -492,7 +578,11 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
                 posizione.aggiorna_campo(posizione.getRiga()+1,posizione.getNumero_colonne());
             }
         }
-        Log.i("LIMITE_CAMPO_DEBUG","Percentuale verde: "+prc);
+
+        manage_opencv(false);
+
+        Log.i("CERCA_LIMITE",""+result);
+
         return result;
     }
 
@@ -581,6 +671,13 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
     }
 
     private boolean move(String action, int speed, int time){
+
+        while(stop){}
+
+        boolean limite_raggiunto = false;
+        if(action.equals(Position.muovi_avanti)){
+            limite_raggiunto = limite_campo();
+        }
         boolean result=posizione.muovi(action);
         int speed_dx = 0;
         int speed_sx = 0;
@@ -611,12 +708,10 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
                 Log.e("MOVE_DEBUG", "Errore: azione '" + action + "' non riconosciuta.");
             }
             try {
+                sharedElements.motorLeft.resetPosition();
+                sharedElements.motorRight.resetPosition();
                 sharedElements.motorLeft.setTimeSpeed(speed_sx, 0, time, 0, true);
                 sharedElements.motorRight.setTimeSpeed(speed_dx, 0, time, 0, true);
-            } catch (Exception e) {
-                Log.e("MOVE_DEBUG", e.toString());
-            }
-            try {
                 Thread.currentThread().sleep(time + 1000);
             } catch (Exception e) {
                 Log.e("MOVE_DEBUG", e.toString());
@@ -627,18 +722,11 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
         print_pc();
         return result;
     }
-    //
 
     private void manageOpenCV(View root){
-        //OPEN//////////////////////////////////////////////////////////////////////////////////////
-        // Configura l'elemento della camera
-
         mOpenCvCameraView =root.findViewById(R.id.HelloOpenCvView);
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setMaxFrameSize(max_frame_width, max_frame_height);
-        //Log.e("ROT",""+mOpenCvCameraView.getRotation());
-        //mOpenCvCameraView.setRotation(90);
-        // Log.e("ROT",""+mOpenCvCameraView.getRotation());
 
         mOpenCvCameraView.setCvCameraViewListener(new CameraBridgeViewBase.CvCameraViewListener2() {
 
@@ -652,100 +740,119 @@ public class Level1Fragment extends Fragment implements SensorEventListener {
                 Log.d(TAG, "Camera Stopped");
             }
 
-            // Viene eseguito ad ogni frame, con inputFrame l'immagine corrente
             @Override
             public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
 
-                // Salva il frame corrente su un oggetto Mat, ossia una matrice bitmap
+                if(frame_out!=null){
+                    frame_out.release();
+                }
 
-                //PER EMULATORE
-                //Mat frame = inputFrame.rgba();
-
-                //PER SMARTPHONE
-                /*Mat frame2 = inputFrame.rgba();
-
-                /////////////////////////////////////////////////////////////////////////
-
-                /////////////////////////////////////////////////////////////////////////
-                Mat frame=frame2.t();
-
-                Core.rotate(frame2.t(),frame,Core.ROTATE_90_COUNTERCLOCKWISE);
-                Imgproc.resize(frame.t(),frame,frame2.size());
-
-                Mat frame3= new Mat();
-                frame.copyTo(frame3);*/
-
-                // CASA
-                Mat frame = inputFrame.rgba();
-                //Photo.fastNlMeansDenoisingColored(frame,frame); rimozione rumore, not worth, lagga abbestia
+                frame = inputFrame.rgba();
 
                 int x = (frame.width()-frame.height())/2;
                 Rect area = new Rect(new Point(x,0 ),
                         new Point(x+frame.height(),frame.height()));
-                Mat frame3 = new Mat(frame,area);
-                Core.rotate(frame3,frame3,Core.ROTATE_90_CLOCKWISE);
-                Mat frame_cut = frame3.clone();
-                //
-
-                //COMMENTARE SU SMARTPHONE, NON COMMENTARE SU EMULATORE
-                //Imgproc.cvtColor(frame,frame,Imgproc.COLOR_RGB2BGR);
+                frame_draw = new Mat(frame,area);
+                Core.rotate(frame_draw,frame_draw,Core.ROTATE_90_CLOCKWISE);
+                frame_cut = frame_draw.clone();
 
                 if(check_camera) {
                     if(trova_linee) {
                         LineFinder lineFinder = new LineFinder(frame_cut, true);
                         lineFinder.setThreshold(300, 20);
                         lineFinder.setOrientation("landscape");
-                        ArrayList<Double> li = lineFinder.findLine(frame3);
+                        ArrayList<Double> li = lineFinder.findLine(frame_draw);
                         Iterator<Double> iter = li.iterator();
                         String ang = "";
                         while (iter.hasNext()) {
                             ang = ang + "  " + iter.next();
                         }
-                        Log.e("line", ang
-                                //String.valueOf(lineFinder.findLine())
-                        );
+                        Log.e("line", ang);
                     }
-                    BallFinder ballFinder = new BallFinder(frame_cut, true);
-                    ballFinder.setViewRatio(0.0f);
-                    ballFinder.setOrientation("landscape");
-                    ArrayList<Ball> f = ballFinder.findBalls(frame3);
-                    elenco_mine = f;
-                    /*Ball bb;
-                    Iterator<Ball> iti = elenco_mine.iterator();
-                    while(iti.hasNext()){
-                        bb=iti.next();
-                        Log.i("CERCA_DEBUG",bb.color);
-                    }*/
 
+                    if(trova_mine) {
+                        ballFinder.setFrame(frame_cut);
+                        ballFinder.setViewRatio(0.0f);
+                        ballFinder.setOrientation("landscape");
+                        ArrayList<Ball> f = ballFinder.findBalls(frame_draw);
+                        elenco_mine = f;
+                    }
 
-                    //Collections.copy(elenco_mine,f);
-                    //Mat ret = ballFinder.findBalls(frame3);
-
-                    GreenFinder gFinder = new GreenFinder(frame_cut, true, 440, 80);
-                    gFinder.setViewRatio(0.0f);
-                    gFinder.setOrientation("landscape");
-                    //Mat ret = gFinder.findGreen();
-                    double prc = gFinder.findGreen(frame3);
-                    TextView t = root.findViewById(R.id.textView);
-                    green_perc=prc;
-                    t.setText("Percentage: " + prc);
+                    if(trova_limite) {
+                        greenFinder.setFrame(frame_cut);
+                        greenFinder.setViewRatio(0.0f);
+                        greenFinder.setOrientation("landscape");
+                        double prc = greenFinder.findGreen(frame_draw);
+                        green_perc = prc;
+                        greenPrc.setText("Percentage: " + prc);
+                    }
                 }
 
 
-                // CASA
-                Mat black = Mat.zeros(frame.size(),frame.type());
-                frame3.copyTo(black.submat(area));
-                return black;
-                //
+                frame_out = Mat.zeros(frame.size(),frame.type());
+                frame_draw.copyTo(frame_out.submat(area));
 
-                //return frame3;
+                frame.release();
+                frame_draw.release();
+                frame_cut.release();
 
-                //return ret;
+                return frame_out;
             }
         });
-
-        // Abilita la visualizzazione dell'immagine sullo schermo
         mOpenCvCameraView.enableView();
-        //CLOSE/////////////////////////////////////////////////////////////////////////////////////
     }
+
+
+    //output
+    private void createGrid(int numRow, int numCol){
+        Coordinates temp;
+        this.fieldContainer.removeAllViewsInLayout();
+        // Questo ciclo for genera la grglia con il numero delle celle e lo switch
+        for(int i = numRow - 1; i >= 0; i--){
+            TableRow row = (TableRow) LayoutInflater.from(this.fieldContainer.getContext()).inflate(R.layout.grid_row, null);
+            for(int j = 0; j < numCol; j++){
+                TableLayout cell = (TableLayout) LayoutInflater.from(this.fieldContainer.getContext()).inflate(R.layout.grid_cell, null);
+                cell.setTag("cell_"+i+"_"+j);
+
+                temp=minaInPosizione(i,j,field);
+                if(temp!=null){
+                    switch (temp.color){
+                        case "yellow":
+                            cell.setBackgroundColor(Color.parseColor(giallo));
+                            break;
+                        case "blue":
+                            cell.setBackgroundColor(Color.parseColor(blu));
+                            break;
+                        case "red":
+                            cell.setBackgroundColor(Color.parseColor(rosso));
+                            break;
+                    }
+                }
+
+                //aggiunge testo
+                ((TextView) cell.findViewById(R.id.cell_position)).setText(i+", "+j);
+
+                //this.field.add(new Coordinates(i, j, cell.findViewById(R.id.select_cell)));
+                row.addView(cell, this.fieldContainer.getLayoutParams());
+                row.invalidate();
+            }
+            this.fieldContainer.addView(row, this.fieldContainer.getLayoutParams());
+            this.fieldContainer.invalidate();
+        }
+    }
+
+    public Coordinates minaInPosizione(int x, int y, ArrayList<Coordinates> al){
+        Coordinates result=null;
+        Coordinates it;
+        Iterator<Coordinates> iter = al.iterator();
+        while(iter.hasNext() && result==null){
+            it = iter.next();
+            if (it.x==x && it.y==y && !it.color.equals("")){
+                result = it;
+            }
+        }
+        return result;
+    }
+
+
 }

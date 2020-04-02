@@ -8,18 +8,6 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp">
 
-        <TextView
-            android:id="@+id/level2_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/start_level_label" />
-    </TableRow>
-
-    <TableRow
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp">
-
         <Button
             android:id="@+id/start_level1_button"
             android:layout_width="wrap_content"
@@ -32,43 +20,35 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp">
 
-        <TextView
-            android:id="@+id/label_num_col"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/gyro" />
-
-        <TextView
-            android:id="@+id/gyro_level1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" />
-
-        <TextView
-            android:id="@+id/gyro_level1_test"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" />
-    </TableRow>
-    <TableRow
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp">
-
         <Button
             android:id="@+id/stop_level1_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/stop" />
+
     </TableRow>
+
+    <TableRow
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TableLayout
+            android:id="@+id/output_table"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/border_green" />
+    </TableRow>
+
     <LinearLayout
         android:id="@+id/layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:visibility="visible">
 
         <TextView
             android:id="@+id/textView"
@@ -77,8 +57,7 @@
             android:layout_weight="0"
             android:background="#4CAF50"
             android:text="@string/prc"
-            android:visibility="visible"
-            tools:visibility="visible" />
+            android:visibility="gone" />
 
         <org.opencv.android.JavaCameraView
             android:id="@+id/HelloOpenCvView"
@@ -91,4 +70,5 @@
 
 
     </LinearLayout>
+
 </TableLayout>

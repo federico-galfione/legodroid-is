@@ -1,19 +1,23 @@
 <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:tag="LAYOUT"
-    android:layout_width="match_parent" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/border">
-    <TableRow android:tag="TABLEROW1">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_weight="1"
+    android:tag="LAYOUT">
+
+    <TableRow
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:tag="TABLEROW1"
+        android:textAlignment="center">
+
         <TextView
             android:id="@+id/cell_position"
-            android:textAlignment="center"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            />
-    </TableRow>
-    <TableRow android:tag="TABLEROW2">
-        <Switch android:id="@+id/select_cell"
-            android:layout_width="match_parent"
-            android:layout_gravity="center"
-            android:layout_height="wrap_content"></Switch>
+            android:gravity="center"
+            android:textAlignment="center"
+            android:textSize="24sp"
+            android:textStyle="bold" />
     </TableRow>
 </TableLayout>

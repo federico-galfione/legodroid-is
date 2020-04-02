@@ -46,17 +46,37 @@ public class BallFinder {
 
     private Mat frame;
 
+    private Mat hsv;
+    private Mat mask_sat;
+    private Mat kernel;
+    private Mat hue;
+    private Mat mask_red;
+    private Mat mask_red2;
+    private Mat mask_blue;
+    private Mat mask_yellow;
+    private Mat mask_hue;
+    private Mat mask;
+    private Mat hierarchy;
+    private Mat circles;
+    private Mat check;
+
+
+
     public BallFinder(Mat frame) {
         this.frame = frame.clone();
     }
 
     public BallFinder(Mat frame, boolean debug) {
-        this(frame);
+        //this(frame);
 
         if (debug) {
             this.frame = frame;
             this.debug = true;
         }
+    }
+
+    public void setFrame(Mat frame) {
+        this.frame = frame;
     }
 
     public void setOrientation(String orientation) {
@@ -97,7 +117,7 @@ public class BallFinder {
     public ArrayList<Ball> /*Mat*/ findBalls(Mat destinazione) {
         ArrayList<Ball> balls = new ArrayList<>();
 
-        Mat hsv = new Mat();
+        hsv = new Mat();
         List<Mat> split_hsv = new ArrayList<>();
 
         //convert RGB/BGR to HSV (hue saturation value)
@@ -105,7 +125,7 @@ public class BallFinder {
         //Divides a multi-channel array into several single-channel arrays
         Core.split(hsv, split_hsv);
 
-        Mat mask_sat = new Mat();
+        mask_sat = new Mat();
         //Applies a fixed-level threshold to each array element.
         //Application example: Separate out regions of an image corresponding to objects which we want to analyze.
         //This separation is based on the variation of intensity between the object pixels and the background pixels.
@@ -113,16 +133,16 @@ public class BallFinder {
 
         //size	2D array size: Size(cols, rows).
         //In the Size() constructor, the number of rows and the number of columns go in the reverse order
-        Mat kernel = new Mat(new Size(3, 3), CvType.CV_8UC1, new Scalar(255));
+        kernel = new Mat(new Size(3, 3), CvType.CV_8UC1, new Scalar(255));
         //Performs advanced morphological transformations.
         //https://docs.opencv.org/2.4/doc/tutorials/imgproc/opening_closing_hats/opening_closing_hats.html
         Imgproc.morphologyEx(mask_sat, mask_sat, Imgproc.MORPH_OPEN, kernel);
 
-        Mat hue = split_hsv.get(0);
-        Mat mask_red = new Mat();
-        Mat mask_red2 = new Mat();
-        Mat mask_blue = new Mat();
-        Mat mask_yellow = new Mat();
+        hue = split_hsv.get(0);
+        mask_red = new Mat();
+        mask_red2 = new Mat();
+        mask_blue = new Mat();
+        mask_yellow = new Mat();
 
         //Checks if array elements lie between the elements of two other arrays.
         Core.inRange(hsv, new Scalar(red_lower, 0, 0), new Scalar(red_upper, 255, 255), mask_red);
@@ -130,8 +150,8 @@ public class BallFinder {
         Core.inRange(hsv, new Scalar(blue_lower, 0, 0), new Scalar(blue_upper, 255, 255), mask_blue);
         Core.inRange(hsv, new Scalar(yellow_lower, 0, 0), new Scalar(yellow_upper, 255, 255), mask_yellow);
 
-        Mat mask_hue = new Mat();
-        Mat mask = new Mat();
+        mask_hue = new Mat();
+        mask = new Mat();
 
         Core.bitwise_or(mask_red, mask_red2, mask_hue);
         Core.bitwise_or(mask_hue, mask_blue, mask_hue);
@@ -143,8 +163,8 @@ public class BallFinder {
 
 
         List<MatOfPoint> contours = new ArrayList<>();
-        Mat hierarchy = new Mat();
-        Mat circles=new Mat();
+        hierarchy = new Mat();
+        circles=new Mat();
 
         Imgproc.findContours(mask, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
@@ -232,6 +252,21 @@ public class BallFinder {
         Log.e("BALLS", Arrays.toString(balls.stream().map(x -> x.center).toArray()));
 
 
+        //pulizia
+
+        hsv.release();
+        mask_sat.release();
+        kernel.release();
+        hue.release();
+        mask_red.release();
+        mask_red2.release();
+        mask_blue.release();
+        mask_yellow.release();
+        mask_hue.release();
+        mask.release();
+        hierarchy.release();
+        circles.release();
+
         return balls;
     }
 
@@ -261,13 +296,17 @@ public class BallFinder {
             }
             Rect area = new Rect(new Point(center.x - radius, center.y - radius),
                     new Point(center.x + radius, center.y + radius));
-            Mat check = new Mat(mask, area);
+            check = new Mat(mask, area);
             Log.e("check1", "mat creation");
             Size Tot = check.size();
             final int area_test = Core.countNonZero(check);
             double percentage = (area_test * 100) / (Tot.height * Tot.width);
             check.release();
             Log.e("check1", "mat destroy");
+
+            //pulizia
+            check.release();
+
             if (percentage > 55) {// percentuale effettiva 79
                 return true;
             } else {

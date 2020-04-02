@@ -31,8 +31,16 @@ public class GreenFinder {
 
     private Mat frame;
 
+    private Mat hsv;
+    private ArrayList<Mat> split_hsv;
+    private Mat mask_sat;
+    private Mat hue;
+    private Mat mask_green;
+    private Mat mask;
+
+
     public GreenFinder(Mat frame, int height, int size) {
-        this.frame = frame.clone();
+        //this.frame = frame.clone();
         this.height = height;
         this.size = size;
     }
@@ -43,11 +51,15 @@ public class GreenFinder {
             this.frame = frame;
             this.debug = true;
         }
+
+    }
+
+    public void setFrame(Mat frame) {
+        this.frame =frame;
         Rect area = new Rect(new Point(0,this.height - (this.size/2) ),
                 new Point(frame.width(),this.height + (this.size/2)));
         this.frame = new Mat(this.frame,area);
     }
-
 
     public void setOrientation(String orientation) {
         if (orientation == "landscape" || orientation == "portrait")
@@ -82,7 +94,7 @@ public class GreenFinder {
                 new Point(frame.width(),this.height + (this.size/2)),
                 new Scalar(0,255,0), 2);
 
-        Mat hsv = new Mat();
+        hsv = new Mat();
         List<Mat> split_hsv = new ArrayList<>();
 
         //convert RGB/BGR to HSV (hue saturation value)
@@ -92,7 +104,7 @@ public class GreenFinder {
         //Divides a multi-channel array into several single-channel arrays
         Core.split(hsv, split_hsv);
 
-        Mat mask_sat = new Mat();
+        mask_sat = new Mat();
 
         //Applies a fixed-level threshold to each array element.
         //Application example: Separate out regions of an image corresponding to objects which we want to analyze.
@@ -106,15 +118,15 @@ public class GreenFinder {
         //https://docs.opencv.org/2.4/doc/tutorials/imgproc/opening_closing_hats/opening_closing_hats.html
         //Imgproc.morphologyEx(mask_sat, mask_sat, Imgproc.MORPH_OPEN, kernel);
 
-        Mat hue = split_hsv.get(0);
-        Mat mask_green = new Mat();
+        hue = split_hsv.get(0);
+        mask_green = new Mat();
 
 
         //Checks if array elements lie between the elements of two other arrays.
         Core.inRange(hsv, new Scalar(green_lower, 0, 0), new Scalar(green_upper, 255, 255), mask_green);
 
 
-        Mat mask = new Mat();
+        mask = new Mat();
 
 
         Core.bitwise_and(mask_sat, mask_green, mask);
@@ -128,6 +140,16 @@ public class GreenFinder {
         double percentage = (Green*100)/(Tot.height * Tot.width);
         Log.e("TEST_GREEN_FINDER","Percentage: "+percentage);
         //return mask;
+
+
+        //pulizia
+        hsv.release();
+        mask_sat.release();
+        hue.release();
+        mask_green.release();
+        mask.release();
+        frame.release();
+
         return percentage;
     }
 

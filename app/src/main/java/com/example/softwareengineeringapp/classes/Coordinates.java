@@ -6,20 +6,18 @@ import android.widget.Switch;
 public class Coordinates {
     public int x;
     public int y;
-    private Switch selector;
+    public String color;
 
     public Coordinates(int x, int y){
         this.x = x;
         this.y = y;
+        this.color = "";
     }
 
-    public Coordinates(int x, int y, Switch s){
+    public Coordinates(int x, int y, String s){
         this.x = x;
         this.y = y;
-        this.selector = s;
+        this.color = s;
     }
 
-    public boolean getHasBall(){
-        return (this.selector != null) ? this.selector.isChecked() : false;
-    }
 }
