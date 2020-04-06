@@ -3,22 +3,22 @@
 
     <item
         android:id="@+id/navigation_level1"
-        android:icon="@drawable/ic_home_black_24dp"
+        android:icon="@mipmap/first_c"
         android:title="@string/title_level1" />
 
     <item
         android:id="@+id/navigation_level2"
-        android:icon="@drawable/ic_dashboard_black_24dp"
+        android:icon="@mipmap/second_c"
         android:title="@string/title_level2" />
 
     <item
         android:id="@+id/navigation_level3"
-        android:icon="@drawable/ic_notifications_black_24dp"
+        android:icon="@mipmap/third_c"
         android:title="@string/title_level3" />
 
     <item
         android:id="@+id/navigation_test"
-        android:icon="@drawable/ic_home_black_24dp"
+        android:icon="@mipmap/test_c"
         android:title="@string/title_test" />
 
 </menu>

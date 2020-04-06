@@ -1,7 +1,11 @@
 package com.example.softwareengineeringapp.ui.level2;
 
+import android.Manifest;
 import android.app.AlertDialog;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -15,7 +19,10 @@ import android.widget.TableRow;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import it.unive.dais.legodroid.lib.comm.Connection;
 import it.unive.dais.legodroid.lib.plugs.GyroSensor;
 import it.unive.dais.legodroid.lib.plugs.TachoMotor;
 
@@ -30,6 +37,8 @@ import com.example.softwareengineeringapp.classes.LineFinder;
 import com.example.softwareengineeringapp.classes.Position;
 import com.example.softwareengineeringapp.ui.level1.Level1Fragment;
 import com.example.softwareengineeringapp.ui.level1.Level1ViewModel;
+import com.google.android.gms.nearby.Nearby;
+import com.google.android.gms.nearby.connection.ConnectionsClient;
 
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.core.Core;
@@ -44,17 +53,16 @@ import java.util.TimerTask;
 
 public class Level2Fragment extends Fragment{
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
     public static final String giallo = "#FFEB3B";
     public static final String blu = "#1F92FF";
     public static final String rosso = "#FF3131";
 
     private Position posizione;
-    public static final int tempo_1_casella = 2186;  //1600
-    public static final int tempo_90_gradi = 1600;  //1600
+    public static final int tempo_1_casella = 2400;
+    public static final int tempo_90_gradi = 1200;
     public static final int tempo_grab_release = 1100;
-    public static final int velocita_default_avanti_indietro = 30;
-    public static final int velocita_default_rotazione = 10;
+    public static final int velocita_default_avanti_indietro = 20;
+    public static final int velocita_default_rotazione = 20;
     public static final int velocita_default_grab_release = 40;
     public float gradi_destinazione;
     private boolean check_camera = false;
@@ -81,9 +89,20 @@ public class Level2Fragment extends Fragment{
     private CameraBridgeViewBase mOpenCvCameraView;
     private TextView greenPrc;
 
-    //output
     private TableLayout fieldContainer;
     private ArrayList<Coordinates> field = new ArrayList<>();
+
+    private ConnectionsClient mConnectionsClient;
+    private static final String[] REQUIRED_PERMISSIONS =
+            new String[] {
+                    Manifest.permission.BLUETOOTH,
+                    Manifest.permission.BLUETOOTH_ADMIN,
+                    Manifest.permission.ACCESS_WIFI_STATE,
+                    Manifest.permission.CHANGE_WIFI_STATE,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+            };
+
+    private static final int REQUEST_CODE_REQUIRED_PERMISSIONS = 1;
 
 
     class Sharing {
@@ -100,8 +119,6 @@ public class Level2Fragment extends Fragment{
             this.giroscopio = giroscopio;
         }
     }
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-
 
     private Button createGridButton;
     private Button startLevelButton;
@@ -110,16 +127,6 @@ public class Level2Fragment extends Fragment{
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_level2, container, false);
-
-        /*fieldContainer = root.findViewById(R.id.field_container2);
-        createGridButton = root.findViewById(R.id.create_grid);
-        startLevelButton = root.findViewById(R.id.start_level2_button);
-
-        startLevelButton.setOnClickListener(this::startLevel2);
-
-        startLevelButton.setVisibility(View.INVISIBLE);*/
-
-
 
         startLevel2 = root.findViewById(R.id.start_level2_button);
         stopLevel2 = root.findViewById(R.id.stop_level2_button);
@@ -130,11 +137,10 @@ public class Level2Fragment extends Fragment{
         Log.i("MYLOG MAINACTIVITY", MainActivity.motorLeft+"");
 
         //CREAZIONE CAMPO
-        posizione = new Position(3,3);
+        posizione = new Position(9,9);
 
         movementTestThread = new Thread(this::startLevel2);
 
-        // Al click del pulsante avvia il primo livello
         startLevel2.setText("AVVIA PROVA");
         startLevel2.setOnClickListener((view) -> {
             switch (startLevel2.getText().toString()){
@@ -155,7 +161,6 @@ public class Level2Fragment extends Fragment{
 
         });
 
-        // Blocca i motori
         stopLevel2.setText("PAUSA");
         stopLevel2.setOnClickListener((view) -> {
             try {
@@ -174,30 +179,11 @@ public class Level2Fragment extends Fragment{
             }
         });
 
-
-        /*// Clicco Il bottone "CREA GRIGLIA"
-        createGridButton.setOnClickListener((view) -> {
-            int numRowLength = ((EditText) root.findViewById(R.id.num_row)).getText().length();
-            int numColLength = ((EditText) root.findViewById(R.id.num_col)).getText().length();
-            int numRow, numCol;
-            if(numColLength != 0 && numRowLength != 0){
-                numRow = Integer.parseInt(((EditText) root.findViewById(R.id.num_row)).getText().toString());
-                numCol = Integer.parseInt(((EditText) root.findViewById(R.id.num_col)).getText().toString());
-                this.createGrid(numRow, numCol);
-            } else {
-                AlertDialog.Builder alertBuilder = new AlertDialog.Builder(getActivity());
-                AlertDialog alert = alertBuilder.setTitle("Errore creazione").setMessage("Devi inserire entrambi i valori per procedere").create();
-                alert.show();
-            }
-        });*/
-
         return root;
     }
 
 
     private void startLevel2(){
-
-
 
         Timer gc = new Timer();
         gc.schedule(new TimerTask() {
@@ -211,8 +197,6 @@ public class Level2Fragment extends Fragment{
         this.ballFinder = new BallFinder(null, true);
         this.greenFinder = new GreenFinder(null, true, 390, 100);
 
-
-        Log.e("CERCA_DEBUG","HERE WE GO!");
         manage_opencv(false);
 
         ArrayList<String> percorso;
@@ -224,6 +208,7 @@ public class Level2Fragment extends Fragment{
         String mossa;
         while (iter_mine.hasNext()){
             mina=iter_mine.next();
+            Log.d("ConnectionsActivity ELENCO MINE: ",mina.toString());
             percorso = posizione.calcola_percorso_ostacoli(mina.x,mina.y,mine);
             iter_mosse=percorso.iterator();
             while (iter_mosse.hasNext()){
@@ -242,8 +227,8 @@ public class Level2Fragment extends Fragment{
                 }
                 iter_mosse.remove();
             }
-            cerca_mina_vicino(mina.color);
-            raccogli_mina(cerca_mina_vicino(mina.color));
+            Ball b = cerca_mina_vicino();
+            raccogli_mina(cerca_mina_vicino(b.color));
 
             if(p_inverso.size()>0 && !p_inverso.get(0).equals(Position.muovi_avanti)){
                 if(p_inverso.get(0).equals(Position.orientazione_destra)){
@@ -275,14 +260,8 @@ public class Level2Fragment extends Fragment{
     }
 
     private ArrayList<Coordinates> getPosizioneMine(){
-        ArrayList<Coordinates> result = new ArrayList<>();
-        result.add(new Coordinates(2,2,"yellow"));
-        result.add(new Coordinates(0,2,"yellow"));
-        return result;
+        return MainActivity.mainActivity.posizioneMine;
     }
-
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
 
 
     private void raccogli_mina(Ball x){
@@ -324,34 +303,22 @@ public class Level2Fragment extends Fragment{
     }
 
     private Ball cerca_mina_vicino(){
+        manage_opencv(true,false,true,false);
+
         ArrayList<Ball> bl = new ArrayList<>();
         Ball result=null;
-        Ball b=null;
-        int red=0;
-        int blue=0;
-        int yellow=0;
-        for (int i=0; i<10;i++){
+        Ball b;
+        for (int i=0; i<5;i++){
             try{
-                Iterator<Ball> iter = elenco_mine.iterator();
-                while(iter.hasNext()){
-                    b=iter.next();
-                    if(result==null || b.radius>result.radius){
-                        result = b;
+                if(elenco_mine!=null) {
+                    Iterator<Ball> iter = elenco_mine.iterator();
+                    while (iter.hasNext()) {
+                        b = iter.next();
+                        if (result == null || b.radius > result.radius){
+                            result = b;
+                        }
                     }
-                }
-                if(result!=null){
                     bl.add(result);
-                    switch (result.color){
-                        case "red":
-                            red++;
-                            break;
-                        case "blue":
-                            blue++;
-                            break;
-                        case "yellow":
-                            yellow++;
-                            break;
-                    }
                     result = null;
                 }
                 Thread.currentThread().sleep(500);
@@ -360,35 +327,27 @@ public class Level2Fragment extends Fragment{
             }
         }
 
-        String n_mag = "";
-        if(red >= blue && red >= yellow){
-            n_mag="red";
-        }else if(blue >= red && blue >= yellow){
-            n_mag="blue";
-        }else{
-            n_mag="yellow";
-        }
-
         Iterator<Ball> iter = bl.iterator();
         double temp=-1;
         double bd;
         while(iter.hasNext()){
             b=iter.next();
-            bd=b.radius;
-            if(b.color.equals(n_mag)){
-                if(bd>temp || temp<0){
-                    temp=bd;
-                    result=b;
+            if(b!=null) {
+                bd = b.radius;
+                if ((bd > temp || temp < 0) && bd>=40) {
+                    temp = bd;
+                    result = b;
                 }
             }
         }
 
         if(result==null){
-            Log.i("CERCA_DEBUG", "OUTPUT -> null");
+            Log.i("CERCA_DEBUG", "VICINO OUTPUT -> null");
         }else {
-            Log.i("CERCA_DEBUG", "OUTPUT -> r:" + result.center.x + " c:" + result.color);
+            Log.i("CERCA_DEBUG", "VICINO OUTPUT -> c:" + result.center.x + " r:" + result.radius +" c:" + result.color);
         }
 
+        manage_opencv(false);
         return result;
     }
 

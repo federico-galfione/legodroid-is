@@ -33,13 +33,14 @@ public class BallFinder {
 
     private int blue_lower = 105;
     private int blue_upper = 130;
-    /*
+
     private int yellow_lower = 16;
     private int yellow_upper = 31;
-     */
 
-    private int yellow_lower = 30;
+    /*
+    private int yellow_lower = 20;
     private int yellow_upper = 80;
+    */
 
     private boolean debug = false;
     private String orientation = "portrait";
@@ -63,12 +64,11 @@ public class BallFinder {
 
 
     public BallFinder(Mat frame) {
-        this.frame = frame.clone();
+        this.frame = frame;
     }
 
     public BallFinder(Mat frame, boolean debug) {
-        //this(frame);
-
+        this(frame);
         if (debug) {
             this.frame = frame;
             this.debug = true;
@@ -168,17 +168,6 @@ public class BallFinder {
 
         Imgproc.findContours(mask, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
-        /*Imgproc.HoughCircles(mask,circles,Imgproc.HOUGH_GRADIENT, 2, 100, 100, 100, 0, 500);
-
-        for (int x = 0; x < circles.cols(); x++) {
-            double[] c = circles.get(0, x);
-            Point center = new Point(Math.round(c[0]), Math.round(c[1]));
-            // circle center
-            Imgproc.circle(frame, center, 1, new Scalar(0,100,100), 3, 8, 0 );
-            // circle outline
-            int radius = (int) Math.round(c[2]);
-            Imgproc.circle(frame, center, radius, new Scalar(255,0,255), 3, 8, 0 );
-        }*/
         if (debug) {
             Point p1 = new Point(frame.width() * view_ratio, 0);
             Point p2 = new Point(frame.width() * view_ratio, frame.height());
@@ -189,13 +178,9 @@ public class BallFinder {
             }
 
             Imgproc.line(destinazione, p1, p2, new Scalar(0, 255, 255), 2);
-
-            //COMMENTATA DAL CASA, SCOMMENTARE IN CASO DI EMERGENZA
-            //for (int i = 0; i < contours.size(); i++)
-            //Imgproc.drawContours(frame, contours, i, new Scalar(255, 0, 0), 2);
         }
 
-        //VISUALIZZAZIONE PALLE
+        //VISUALIZZAZIONE
         float[] radius = new float[1];
         Point center = new Point();
         String testString = "";
@@ -208,7 +193,6 @@ public class BallFinder {
                 cond = center.y > frame.height() * view_ratio;
 
             if (cond && Imgproc.contourArea(c) > min_area) {
-                // TODO: add color mean for area_hue
                 int area_hue = (int) hue.get((int) center.y, (int) center.x)[0];
                 String color;
 
@@ -240,19 +224,12 @@ public class BallFinder {
                         else
                             color_rgb = new Scalar(0, 0, 0);
 
-                        //if (color == "red" || color == "blue" || color == "yellow") {
-                            Imgproc.circle(destinazione, center, (int) radius[0], color_rgb, 2);
-                        //}
+                        Imgproc.circle(destinazione, center, (int) radius[0], color_rgb, 2);
                     }
                 }
             }
         }
-        Log.e("TEST_CENTER", testString);
 
-        Log.e("BALLS", Arrays.toString(balls.stream().map(x -> x.center).toArray()));
-
-
-        //pulizia
 
         hsv.release();
         mask_sat.release();
@@ -270,8 +247,6 @@ public class BallFinder {
         return balls;
     }
 
-    //Controllo se ball.center è contenuto all'interno di altri cherchi.
-    //Se così fosse, tengo il maggiore tra i due ed elimino l'altro.
     private boolean checkBalls(ArrayList<Ball> list, Ball ball){
 
         Iterator<Ball> iter = list.iterator();
@@ -289,6 +264,7 @@ public class BallFinder {
         }
         return add;
     }
+
     private boolean check_existance(Point center, float radius, Mat mask){
         try {
             if(center.x - radius <0 || center.y - radius <0 || center.x + radius>mask.width() || center.y + radius>mask.height()){
@@ -297,14 +273,11 @@ public class BallFinder {
             Rect area = new Rect(new Point(center.x - radius, center.y - radius),
                     new Point(center.x + radius, center.y + radius));
             check = new Mat(mask, area);
-            Log.e("check1", "mat creation");
             Size Tot = check.size();
             final int area_test = Core.countNonZero(check);
             double percentage = (area_test * 100) / (Tot.height * Tot.width);
             check.release();
-            Log.e("check1", "mat destroy");
 
-            //pulizia
             check.release();
 
             if (percentage > 55) {// percentuale effettiva 79

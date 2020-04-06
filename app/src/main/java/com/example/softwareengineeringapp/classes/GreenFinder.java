@@ -40,7 +40,7 @@ public class GreenFinder {
 
 
     public GreenFinder(Mat frame, int height, int size) {
-        //this.frame = frame.clone();
+        this.frame = frame;
         this.height = height;
         this.size = size;
     }
@@ -87,7 +87,7 @@ public class GreenFinder {
     }
 
 
-    public /*Mat*/ double findGreen(Mat frame1){
+    public double findGreen(Mat frame1){
 
         Imgproc.rectangle(frame1,
                 new Point(0,this.height - (this.size/2) ),
@@ -98,7 +98,7 @@ public class GreenFinder {
         List<Mat> split_hsv = new ArrayList<>();
 
         //convert RGB/BGR to HSV (hue saturation value)
-        //IMPORTANTE: cambiato da RGB2HSV a BRG2HSV
+        //Cambiato da RGB2HSV a BRG2HSV
         Imgproc.cvtColor(frame, hsv, Imgproc.COLOR_BGR2HSV);
 
         //Divides a multi-channel array into several single-channel arrays
@@ -111,38 +111,17 @@ public class GreenFinder {
         //This separation is based on the variation of intensity between the object pixels and the background pixels.
         Imgproc.threshold(split_hsv.get(1), mask_sat, sat_lower, sat_upper, Imgproc.THRESH_BINARY);
 
-        //size	2D array size: Size(cols, rows).
-        //In the Size() constructor, the number of rows and the number of columns go in the reverse order
-        //Mat kernel = new Mat(new Size(3, 3), CvType.CV_8UC1, new Scalar(255));
-        //Performs advanced morphological transformations.
-        //https://docs.opencv.org/2.4/doc/tutorials/imgproc/opening_closing_hats/opening_closing_hats.html
-        //Imgproc.morphologyEx(mask_sat, mask_sat, Imgproc.MORPH_OPEN, kernel);
-
         hue = split_hsv.get(0);
         mask_green = new Mat();
 
-
         //Checks if array elements lie between the elements of two other arrays.
         Core.inRange(hsv, new Scalar(green_lower, 0, 0), new Scalar(green_upper, 255, 255), mask_green);
-
-
         mask = new Mat();
-
-
         Core.bitwise_and(mask_sat, mask_green, mask);
-
-
-
         Size Tot=mask.size();
-
         final int Green = Core.countNonZero(mask);
-
         double percentage = (Green*100)/(Tot.height * Tot.width);
-        Log.e("TEST_GREEN_FINDER","Percentage: "+percentage);
-        //return mask;
 
-
-        //pulizia
         hsv.release();
         mask_sat.release();
         hue.release();

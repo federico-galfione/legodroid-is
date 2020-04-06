@@ -20,4 +20,8 @@ public class Coordinates {
         this.color = s;
     }
 
+    @Override
+    public String toString(){
+        return "r:"+x+" c:"+y+" color:"+color;
+    }
 }

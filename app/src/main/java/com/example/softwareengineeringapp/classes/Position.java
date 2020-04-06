@@ -163,7 +163,6 @@ public class Position {
         return result;
     }
 
-
     public boolean muovi(String azione){
         boolean result = false;
         switch (azione){
@@ -177,7 +176,7 @@ public class Position {
                         }
                         break;
                     case Position.orientazione_basso:
-                        //Poò uscire dal campo nella cella (-1,0)
+                        //Può uscire dal campo nella cella (-1,0)
                         if(this.riga-1 >= 0 || (this.riga-1==-1 && this.colonna==0)){
                             aggiorna_posizione(this.riga-1,this.colonna);
                             result = true;
@@ -190,7 +189,7 @@ public class Position {
                         }
                         break;
                     case Position.orientazione_sinistra:
-                        //Poò uscire dal campo nella cella (0,-1)
+                        //Può uscire dal campo nella cella (0,-1)
                         if(this.colonna-1 >= 0 || (this.colonna-1==-1 && this.riga==0)){
                             aggiorna_posizione(this.riga,this.colonna-1);
                             result = true;
@@ -266,9 +265,7 @@ public class Position {
         }
         return result;
     }
-    
 
-    //AGGIORNA POSIZIONE E CAMPO ATOMICI
     private boolean aggiorna_posizione(int nuova_riga, int nuova_colonna, String nuova_orientazione){
         int temp_riga=this.riga;
         int temp_colonna=this.colonna;
@@ -337,48 +334,6 @@ public class Position {
 
     public int getNumero_colonne() {
         return numero_colonne;
-    }
-
-    public boolean ostacoliRiga(int c_target, ArrayList<Coordinates> ostacoli){
-        boolean result=false;
-        Iterator<Coordinates> iter=ostacoli.iterator();
-        Coordinates c;
-        while(iter.hasNext()) {
-            c = iter.next();
-            if(c.x==this.riga && c.y!=c_target ){
-                if(this.colonna>c_target){
-                    if(c.y>c_target && c.y<colonna){
-                        result=true;
-                    }
-                }else if(this.colonna<c_target){
-                    if(c.y>colonna && c.y<c_target){
-                        result=true;
-                    }
-                }
-            }
-        }
-        return result;
-    }
-
-    public boolean ostacoliColonna(int r_target, ArrayList<Coordinates> ostacoli){
-        boolean result=false;
-        Iterator<Coordinates> iter=ostacoli.iterator();
-        Coordinates c;
-        while(iter.hasNext()) {
-            c = iter.next();
-            if(c.y==this.colonna && c.x!=r_target){
-                if(this.riga>r_target){
-                    if(c.x>r_target && c.x<riga){
-                        result=true;
-                    }
-                }else if(this.riga<r_target){
-                    if(c.x>riga && c.x<r_target){
-                        result=true;
-                    }
-                }
-            }
-        }
-        return result;
     }
 
     public ArrayList<String> calcola_percorso_ostacoli(int target_r, int target_c, ArrayList<Coordinates> a){

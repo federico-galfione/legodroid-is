@@ -23,11 +23,10 @@ public class Level3Fragment extends Fragment {
         level3ViewModel =
                 ViewModelProviders.of(this).get(Level3ViewModel.class);
         View root = inflater.inflate(R.layout.fragment_level3, container, false);
-        final TextView textView = root.findViewById(R.id.text_level3);
         level3ViewModel.getText().observe(this, new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
-                textView.setText(s);
+
             }
         });
         return root;

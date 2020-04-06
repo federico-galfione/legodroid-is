@@ -49,11 +49,11 @@ public class Level1Fragment extends Fragment{
     public static final String rosso = "#FF3131";
 
     private Position posizione;
-    public static final int tempo_1_casella = 2186;  //1600
-    public static final int tempo_90_gradi = 1600;  //1600
+    public static final int tempo_1_casella = 2400;
+    public static final int tempo_90_gradi = 1200;
     public static final int tempo_grab_release = 1100;
-    public static final int velocita_default_avanti_indietro = 30;
-    public static final int velocita_default_rotazione = 10;
+    public static final int velocita_default_avanti_indietro = 20;
+    public static final int velocita_default_rotazione = 20;
     public static final int velocita_default_grab_release = 40;
     public float gradi_destinazione;
     private boolean check_camera = false;
@@ -80,7 +80,6 @@ public class Level1Fragment extends Fragment{
     private CameraBridgeViewBase mOpenCvCameraView;
     private TextView greenPrc;
 
-    //output
     private TableLayout fieldContainer;
     private ArrayList<Coordinates> field = new ArrayList<>();
 
@@ -114,14 +113,12 @@ public class Level1Fragment extends Fragment{
         fieldContainer = root.findViewById(R.id.output_table);
 
         sharedElements.setMotors(MainActivity.motorLeft, MainActivity.motorRight, MainActivity.motorGrab, MainActivity.giroscopio);
-        Log.i("MYLOG MAINACTIVITY", MainActivity.motorLeft+"");
 
         //CREAZIONE CAMPO
-        posizione = new Position(3,3);
+        posizione = new Position(9,9);
 
         movementTestThread = new Thread(this::startLevel1);
 
-        // Al click del pulsante avvia il primo livello
         startLevel1.setText("AVVIA PROVA");
         startLevel1.setOnClickListener((view) -> {
             switch (startLevel1.getText().toString()){
@@ -139,10 +136,8 @@ public class Level1Fragment extends Fragment{
                     createGrid(posizione.getNumero_righe(),posizione.getNumero_colonne());
                     break;
             }
-
         });
 
-        // Blocca i motori
         stopLevel1.setText("PAUSA");
         stopLevel1.setOnClickListener((view) -> {
             try {
@@ -161,11 +156,9 @@ public class Level1Fragment extends Fragment{
             }
         });
 
-
         return root;
     }
 
-    
     private void startLevel1(){
 
         Timer gc = new Timer();
@@ -178,10 +171,8 @@ public class Level1Fragment extends Fragment{
 
         this.greenPrc.setVisibility(View.VISIBLE);
         this.ballFinder = new BallFinder(null, true);
-        this.greenFinder = new GreenFinder(null, true, 390, 100);
+        this.greenFinder = new GreenFinder(null, true, 440, 80);
 
-
-        Log.e("CERCA_DEBUG","HERE WE GO!");
         manage_opencv(false);
 
         ArrayList<String> mosse = new ArrayList<>();
@@ -208,7 +199,6 @@ public class Level1Fragment extends Fragment{
                             move(Position.muovi_avanti);
                             mosse.add(0,Position.muovi_avanti);
                         } else {
-                            Log.e("CERCA_DEBUG","Raccolta avviata");
                             raccogli_mina(m);
                             trasporta_mina = true;
                             mina_raggiunta = true;
@@ -222,9 +212,7 @@ public class Level1Fragment extends Fragment{
             } else if (trasporta_mina) {
                 //ritorna a 0 0, rilascia la mina e ritona in posizione di partenza
                 move(Position.muovi_ruota_destra);
-                if(posizione.getColonna()>0){
-                    move(Position.muovi_ruota_destra);
-                }
+                move(Position.muovi_ruota_destra);
                 String ei;
                 Iterator<String> it = mosse.iterator();
                 while(it.hasNext()){
@@ -459,7 +447,6 @@ public class Level1Fragment extends Fragment{
         return result;
     }
 
-
     private Ball cerca_mina_distante(){
 
         manage_opencv(true,false,true,false);
@@ -587,13 +574,20 @@ public class Level1Fragment extends Fragment{
     }
 
     private void correggi_angolo(){
+        boolean first=true;
         //distanza tra angolo attuale e angolo di destinazione
         float c = Math.abs( ((gradi_destinazione - gradi())+180)%360 - 180 );
         float c_prev=c;
+        float starting_c=c;
         String d = Position.muovi_ruota_destra;
         while(c > 1) {
             Log.i("CORREGGI_ANGOLO_DEBUG","c_prev: "+c_prev+"  c:"+c);
-            move_correggi_angolo(d, 10, 200);
+            if(first) {
+                move_correggi_angolo(d, 10, 400);
+                first=false;
+            }else{
+                move_correggi_angolo(d, 10, 200);
+            }
             c_prev=c;
             c = Math.abs( ((gradi_destinazione - gradi())+180)%360 - 180 );
             if(c > c_prev){
@@ -708,10 +702,12 @@ public class Level1Fragment extends Fragment{
                 Log.e("MOVE_DEBUG", "Errore: azione '" + action + "' non riconosciuta.");
             }
             try {
-                sharedElements.motorLeft.resetPosition();
-                sharedElements.motorRight.resetPosition();
+                sharedElements.motorLeft.waitUntilReady();
+                sharedElements.motorRight.waitUntilReady();
                 sharedElements.motorLeft.setTimeSpeed(speed_sx, 0, time, 0, true);
                 sharedElements.motorRight.setTimeSpeed(speed_dx, 0, time, 0, true);
+                sharedElements.motorLeft.waitCompletion();
+                sharedElements.motorRight.waitCompletion();
                 Thread.currentThread().sleep(time + 1000);
             } catch (Exception e) {
                 Log.e("MOVE_DEBUG", e.toString());

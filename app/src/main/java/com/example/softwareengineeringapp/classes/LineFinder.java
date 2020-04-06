@@ -7,11 +7,13 @@ import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
 
+//CLASSE NON UTILIZZATA NELLE PROVE
+
 public class LineFinder {
     private int thresh_lower;
     private int thresh_upper;
 
-    private double angoloRette=55; //quandrante 1, da 90 (alto) a 0(destra)
+    private double angoloRette=55; //quadrante 1, da 90 (alto) a 0(destra)
     private double offset=3;
     private double altezzaP1 = 200;
     private double altezzaP2 = 260;
@@ -22,7 +24,7 @@ public class LineFinder {
     private Mat frame;
 
     public LineFinder(Mat frame) {
-        this.frame = frame.clone();
+        this.frame = frame;
     }
 
     public LineFinder(Mat frame, boolean debug) {
@@ -92,22 +94,18 @@ public class LineFinder {
                     double d=90+(90-na);
                     double l2=d-offset;
                     double h2=d+offset;
-                    //Stampo solo le linee che rispettano la seguente condizione
+
                     if( ( checkL && Math.toDegrees(theta) >= l1 && Math.toDegrees(theta) <= h1 ) ||
                             ( checkR && Math.toDegrees(theta) >= l2 && Math.toDegrees(theta) <= h2 ) ){
                         Imgproc.line(frame, p1, p2, new Scalar(255, 255, 0), 2);
                     }
                 }
 
-                //return Math.toDegrees(theta);
-
-                //Aggiungo tutti gli angoli in un ArrrayList<Double>
                 angoli.add(Math.toDegrees(theta));
 
             //}
         }
 
-        //Restituisco l'ArrayList contenente tutti gli angoli delle rette trovate
         return angoli;
     }
 
@@ -123,27 +121,6 @@ public class LineFinder {
         Imgproc.HoughLines(edges, lines, 1, Math.PI/180, 150);
 
         if (debug) {
-            /*Point p1 = new Point(thresh_lower, 0);
-            Point p2 = new Point(thresh_lower, frame.height());
-            Point p3 = new Point(thresh_upper, 0);
-            Point p4 = new Point(thresh_upper, frame.height());
-
-            if (orientation == "landscape") {
-                p1 = new Point(0, thresh_lower);
-                p2 = new Point(frame.width(), thresh_lower);
-                p3 = new Point(0, thresh_upper);
-                p4 = new Point(frame.width(), thresh_upper);
-            }*/
-
-            //LINEE LIMITE CAMPO
-            /*Point p1 = new Point(0, thresh_lower);
-            Point p2 = new Point(frame.width(), thresh_lower);
-            Point p3 = new Point(0, thresh_upper);
-            Point p4 = new Point(frame.width(), thresh_upper);
-            Imgproc.line(destinazione, p1, p2, new Scalar(0, 255, 0), 2);
-            Imgproc.line(destinazione, p3, p4, new Scalar(0, 255, 0), 2);*/
-
-            //LINEE STRADA
             double m=Math.tan(Math.toRadians(angoloRette));
             //y = m * x + altezza
             //x = ( y + altezza ) / m
